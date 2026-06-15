@@ -1,0 +1,37 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+.next/
+out/
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Logs
+*.log
+pino-file.log
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Vite / build cache
+.vite/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vercel
+.vercel
+
+# Replit (should not be in production repo)
+.replit
+replit.nix
+.replit-artifact/
+.local/
