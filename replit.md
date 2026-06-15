@@ -1,45 +1,95 @@
-# [Project name]
+# SmartZim Learning
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Zimbabwe's ZIMSEC & Cambridge exam prep platform — AI tutor, past papers, study notes, mock exams, gamification, teacher social network, and more.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
+- `pnpm --filter @workspace/smartzim run dev` — run the frontend (port 22156)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
+- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- Frontend: React 19 + Vite 7 SPA, Tailwind CSS v4, TanStack Query, Wouter (routing), vite-plugin-pwa (PWA)
+- API: Express 5, session auth (connect-pg-simple + bcryptjs)
+- DB: PostgreSQL + Drizzle ORM (23 tables)
+- AI: Anthropic Claude (lazy-initialized via `ANTHROPIC_API_KEY`)
+- Storage: Supabase Storage (lazy-initialized, replaces Replit Object Storage)
+- Validation: Zod v4, drizzle-zod
+- Build: esbuild (CJS → ESM bundle for API)
+
+## Required env vars
+
+| Var | Purpose |
+|-----|---------|
+| `DATABASE_URL` | Postgres connection string (Replit Postgres for dev) |
+| `SESSION_SECRET` | Express session secret |
+| `ANTHROPIC_API_KEY` | Anthropic API key (only needed when using AI Tutor) |
+| `SUPABASE_URL` | Supabase project URL (only needed for file uploads) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (only needed for file uploads) |
+| `SUPABASE_PUBLIC_BUCKET` | Public storage bucket name (default: `smartzim-public`) |
+| `SUPABASE_PRIVATE_BUCKET` | Private storage bucket name (default: `smartzim-private`) |
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+```
+artifacts/smartzim/       — React PWA frontend
+artifacts/api-server/     — Express 5 API server
+lib/db/                   — Drizzle ORM schema (23 tables) + migrations
+lib/api-spec/             — OpenAPI spec (source of truth)
+lib/api-client-react/     — Generated React Query hooks
+lib/api-zod/              — Generated Zod schemas
+lib/integrations-anthropic-ai/ — Anthropic AI client (lazy)
+lib/object-storage-web/   — Object storage client for browser
+api/index.ts              — Vercel serverless function entry
+vercel.json               — Vercel deployment config
+supabase/migrations/      — SQL schema + RLS policies for Supabase
+supabase/seed.sql         — Default curricula + payment settings
+MIGRATION.md              — Full Vercel + Supabase deployment guide
+.env.example              — All required environment variables documented
+```
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **Session auth over JWT**: Uses `express-session` + `connect-pg-simple` for reliable server-side sessions stored in Postgres — no token expiry management on the client.
+- **Vercel deployment**: Frontend is a static SPA build; API is wrapped as a Vercel serverless function at `api/index.ts`. All `/api/*` routes go to the function; everything else hits `index.html`.
+- **Supabase over Firebase**: PostgreSQL-compatible — Drizzle schema works unchanged. Supabase Storage replaces Replit Object Storage.
+- **Lazy initialization**: Anthropic and Supabase clients only throw when actually called — app starts cleanly in dev without all production keys set.
+- **PWA**: vite-plugin-pwa with Workbox service worker, offline caching, installable manifest with SmartZim branding.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+SmartZim serves three user roles:
+- **Students**: past papers, AI tutor (ZimTutor), notes, mock exams, study planner, gamification (XP/streaks), quiz sessions
+- **Teachers**: assignment creation/grading, note uploads, tutor listings, social profile (LinkedIn-style), channel messaging
+- **Admin**: user approval/rejection, subscription management, announcements, payment settings
+
+## Vercel + Supabase Deployment
+
+See `MIGRATION.md` for the full step-by-step guide. Summary:
+1. Create Supabase project → run `supabase/migrations/` SQL → create 2 storage buckets
+2. Get Anthropic API key
+3. Import repo to Vercel → add env vars → deploy
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Production target: Vercel (frontend + API as serverless function) + Supabase (PostgreSQL + Storage)
+- No Railway or other backend hosting platforms
+- All Replit-specific dependencies removed
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- Drizzle schema push: always run `pnpm --filter @workspace/db run push` after schema changes in dev
+- The pnpm lockfile must be regenerated after removing `@replit/*` catalog entries: run `pnpm install --no-frozen-lockfile`
+- Vercel free tier serverless functions have a 30s timeout — long AI streaming responses may need chunked transfer
+- Supabase connection pooler (port 6543) must be used for `DATABASE_URL` in production, not the direct connection (port 5432)
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See `MIGRATION.md` for the Vercel + Supabase deployment walkthrough
+- See `.env.example` for all environment variables
+- See the `pnpm-workspace` skill for workspace structure details

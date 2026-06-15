@@ -3,20 +3,47 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SmartZim Learning Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication & registration
+  - name: users
+    description: User management
+  - name: notes
+    description: Study notes
+  - name: papers
+    description: Past exam papers
+  - name: assignments
+    description: Assignments & submissions
+  - name: mockExams
+    description: Mock exams
+  - name: bookmarks
+    description: Bookmarks
+  - name: notifications
+    description: Notifications
+  - name: announcements
+    description: Announcements
+  - name: subscriptions
+    description: Subscription management
+  - name: dashboard
+    description: Dashboard summaries
+  - name: syllabus
+    description: Syllabus topics
+  - name: planner
+    description: Study planner
+  - name: anthropic
+    description: AI tutor (Anthropic Claude)
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +51,1990 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ===== AUTH =====
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterUserInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/logout:
+    post:
+      operationId: logoutUser
+      tags: [auth]
+      summary: Logout
+      responses:
+        "204":
+          description: Logged out
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/account:
+    delete:
+      operationId: deleteMyAccount
+      tags: [auth]
+      summary: Permanently delete my account and all associated data
+      responses:
+        "204":
+          description: Account deleted
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /auth/change-password:
+    post:
+      operationId: changeMyPassword
+      tags: [auth]
+      summary: Change my password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordInput"
+      responses:
+        "200":
+          description: Password changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated or current password incorrect
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ===== USERS =====
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all users (admin)
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: role
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+  /users/{id}:
+    get:
+      operationId: getUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    delete:
+      operationId: deleteUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /users/{id}/approve:
+    post:
+      operationId: approveUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /users/{id}/reject:
+    post:
+      operationId: rejectUser
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectUserInput"
+      responses:
+        "200":
+          description: Rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /users/{id}/grant-subscription:
+    post:
+      operationId: grantSubscription
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantSubscriptionInput"
+      responses:
+        "200":
+          description: Granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /users/{id}/revoke-subscription:
+    post:
+      operationId: revokeSubscription
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /users/{id}/promote:
+    post:
+      operationId: promoteToSchoolAdmin
+      tags: [users]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Promoted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [users]
+      parameters:
+        - name: grade
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Leaderboard
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
+  # ===== NOTES =====
+  /notes:
+    get:
+      operationId: listNotes
+      tags: [notes]
+      parameters:
+        - name: curriculum
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: subject
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: level
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: grade
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Notes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Note"
+    post:
+      operationId: createNote
+      tags: [notes]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNoteInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+  /notes/{id}:
+    get:
+      operationId: getNote
+      tags: [notes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Note
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateNote
+      tags: [notes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateNoteInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Note"
+    delete:
+      operationId: deleteNote
+      tags: [notes]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ===== PAPERS =====
+  /papers:
+    get:
+      operationId: listPapers
+      tags: [papers]
+      parameters:
+        - name: curriculum
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: examBoard
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: subject
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: level
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: year
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Papers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Paper"
+    post:
+      operationId: createPaper
+      tags: [papers]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePaperInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Paper"
+  /papers/{id}:
+    get:
+      operationId: getPaper
+      tags: [papers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Paper
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Paper"
+    delete:
+      operationId: deletePaper
+      tags: [papers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /papers/{id}/download:
+    post:
+      operationId: trackPaperDownload
+      tags: [papers]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Tracked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Paper"
+
+  # ===== ASSIGNMENTS =====
+  /assignments:
+    get:
+      operationId: listAssignments
+      tags: [assignments]
+      parameters:
+        - name: grade
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: teacherId
+          in: query
+          required: false
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Assignments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Assignment"
+    post:
+      operationId: createAssignment
+      tags: [assignments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssignmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+  /assignments/{id}:
+    get:
+      operationId: getAssignment
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Assignment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Assignment"
+    delete:
+      operationId: deleteAssignment
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /assignments/{id}/submissions:
+    get:
+      operationId: listSubmissions
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Submission"
+    post:
+      operationId: submitAssignment
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAssignmentInput"
+      responses:
+        "201":
+          description: Submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+  /submissions/{id}/grade:
+    post:
+      operationId: gradeSubmission
+      tags: [assignments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GradeSubmissionInput"
+      responses:
+        "200":
+          description: Graded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Submission"
+  /my-submissions:
+    get:
+      operationId: listMySubmissions
+      tags: [assignments]
+      responses:
+        "200":
+          description: Submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Submission"
+
+  # ===== MOCK EXAMS =====
+  /mock-exams:
+    get:
+      operationId: listMockExams
+      tags: [mockExams]
+      responses:
+        "200":
+          description: Mock exams
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MockExam"
+    post:
+      operationId: createMockExam
+      tags: [mockExams]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMockExamInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MockExam"
+
+  # ===== EXAM PREP (Task #10) =====
+  /exam-dates:
+    get:
+      operationId: listExamDates
+      tags: [examPrep]
+      responses:
+        "200":
+          description: Exam dates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExamDate"
+    post:
+      operationId: createExamDate
+      tags: [examPrep]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateExamDateInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExamDate"
+  /exam-dates/{id}:
+    delete:
+      operationId: deleteExamDate
+      tags: [examPrep]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /weak-topics:
+    get:
+      operationId: listWeakTopics
+      tags: [examPrep]
+      parameters:
+        - name: subject
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Weak topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeakTopic"
+  /exam-readiness:
+    get:
+      operationId: getExamReadiness
+      tags: [examPrep]
+      responses:
+        "200":
+          description: Per-subject exam readiness
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ExamReadiness"
+  /ai/study-plan:
+    post:
+      operationId: generateStudyPlan
+      tags: [examPrep]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudyPlanInput"
+      responses:
+        "200":
+          description: Generated study plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudyPlanResult"
+
+  # ===== BOOKMARKS =====
+  /bookmarks:
+    get:
+      operationId: listBookmarks
+      tags: [bookmarks]
+      responses:
+        "200":
+          description: Bookmarks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Bookmark"
+    post:
+      operationId: createBookmark
+      tags: [bookmarks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBookmarkInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Bookmark"
+  /bookmarks/{id}:
+    delete:
+      operationId: deleteBookmark
+      tags: [bookmarks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ===== NOTIFICATIONS =====
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      responses:
+        "204":
+          description: Marked
+  /notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  # ===== ANNOUNCEMENTS =====
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      tags: [announcements]
+      responses:
+        "200":
+          description: Announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Announcement"
+    post:
+      operationId: createAnnouncement
+      tags: [announcements]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAnnouncementInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+  /announcements/{id}:
+    delete:
+      operationId: deleteAnnouncement
+      tags: [announcements]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ===== SUBSCRIPTIONS =====
+  /subscriptions:
+    get:
+      operationId: listSubscriptions
+      tags: [subscriptions]
+      responses:
+        "200":
+          description: Subs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subscription"
+  /subscriptions/mine:
+    get:
+      operationId: listMySubscriptions
+      tags: [subscriptions]
+      responses:
+        "200":
+          description: Current user's subscriptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Subscription"
+  /subscriptions/checkout:
+    post:
+      operationId: createCheckout
+      tags: [subscriptions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckoutInput"
+      responses:
+        "201":
+          description: Subscription created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+  /subscriptions/{id}/approve:
+    patch:
+      operationId: approveSubscription
+      tags: [subscriptions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Subscription approved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+  /subscriptions/{id}/reject:
+    patch:
+      operationId: rejectSubscription
+      tags: [subscriptions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RejectSubscriptionInput"
+      responses:
+        "200":
+          description: Subscription rejected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+  /payment-settings:
+    get:
+      operationId: getPaymentSettings
+      tags: [subscriptions]
+      responses:
+        "200":
+          description: Payment settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSettings"
+    patch:
+      operationId: updatePaymentSettings
+      tags: [subscriptions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentSettingsInput"
+      responses:
+        "200":
+          description: Updated payment settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentSettings"
+
+  # ===== DASHBOARD =====
+  /dashboard/student:
+    get:
+      operationId: getStudentDashboard
+      tags: [dashboard]
+      responses:
+        "200":
+          description: Student dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentDashboard"
+  /dashboard/teacher:
+    get:
+      operationId: getTeacherDashboard
+      tags: [dashboard]
+      responses:
+        "200":
+          description: Teacher dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherDashboard"
+  /dashboard/admin:
+    get:
+      operationId: getAdminDashboard
+      tags: [dashboard]
+      responses:
+        "200":
+          description: Admin dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+  /dashboard/analytics:
+    get:
+      operationId: getAnalytics
+      tags: [dashboard]
+      responses:
+        "200":
+          description: Analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Analytics"
+
+  # ===== SYLLABUS =====
+  /syllabus:
+    get:
+      operationId: listSyllabusTopics
+      tags: [syllabus]
+      parameters:
+        - name: curriculum
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: subject
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: level
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SyllabusTopic"
+
+  # ===== CURRICULA =====
+  /curricula:
+    get:
+      operationId: listCurricula
+      tags: [curricula]
+      parameters:
+        - name: includeInactive
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Curricula
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Curriculum"
+    post:
+      operationId: createCurriculum
+      tags: [curricula]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCurriculumInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Curriculum"
+  /curricula/{code}:
+    get:
+      operationId: getCurriculum
+      tags: [curricula]
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Curriculum
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Curriculum"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateCurriculum
+      tags: [curricula]
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCurriculumInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Curriculum"
+
+  # ===== PLANNER =====
+  /planner:
+    get:
+      operationId: getPlanner
+      tags: [planner]
+      responses:
+        "200":
+          description: Planner
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PlannerSlot"
+    post:
+      operationId: createPlannerSlot
+      tags: [planner]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlannerSlotInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlannerSlot"
+  /planner/{id}:
+    delete:
+      operationId: deletePlannerSlot
+      tags: [planner]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ===== ANTHROPIC AI TUTOR =====
+  /anthropic/conversations:
+    get:
+      operationId: listAnthropicConversations
+      tags: [anthropic]
+      responses:
+        "200":
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnthropicConversation"
+    post:
+      operationId: createAnthropicConversation
+      tags: [anthropic]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAnthropicConversationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicConversation"
+  /anthropic/conversations/{id}:
+    get:
+      operationId: getAnthropicConversation
+      tags: [anthropic]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Conversation with messages
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicConversationWithMessages"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicError"
+    delete:
+      operationId: deleteAnthropicConversation
+      tags: [anthropic]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnthropicError"
+  /anthropic/conversations/{id}/messages:
+    get:
+      operationId: listAnthropicMessages
+      tags: [anthropic]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AnthropicMessage"
+    post:
+      operationId: sendAnthropicMessage
+      tags: [anthropic]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendAnthropicMessageInput"
+      responses:
+        "200":
+          description: SSE stream
+          content:
+            text/event-stream: {}
+
+  # ===== SOCIAL PLATFORM =====
+  /social/feed:
+    get:
+      operationId: getSocialFeed
+      tags: [social]
+      parameters:
+        - name: limit
+          in: query
+          schema: { type: integer, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Feed posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialPost"
+
+  /social/posts:
+    post:
+      operationId: createSocialPost
+      tags: [social]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSocialPostInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SocialPost"
+
+  /social/posts/{id}:
+    delete:
+      operationId: deleteSocialPost
+      tags: [social]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /social/posts/{id}/react:
+    post:
+      operationId: reactToPost
+      tags: [social]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReactInput"
+      responses:
+        "200":
+          description: Reaction toggled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  removed: { type: boolean }
+                  updated: { type: boolean }
+                  created: { type: boolean }
+                  reactionType: { type: string }
+
+  /social/posts/{id}/reactions:
+    get:
+      operationId: getPostReactions
+      tags: [social]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Reactions
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  reactions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PostReaction"
+                  myReaction:
+                    nullable: true
+                    $ref: "#/components/schemas/PostReaction"
+
+  /social/posts/{id}/comments:
+    get:
+      operationId: listPostComments
+      tags: [social]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Comments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PostComment"
+    post:
+      operationId: createPostComment
+      tags: [social]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePostCommentInput"
+      responses:
+        "201":
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PostComment"
+
+  /social/profile/me:
+    get:
+      operationId: getMyTeacherProfile
+      tags: [social]
+      responses:
+        "200":
+          description: Teacher profile
+          content:
+            application/json:
+              schema:
+                nullable: true
+                $ref: "#/components/schemas/TeacherProfile"
+    put:
+      operationId: updateMyTeacherProfile
+      tags: [social]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateTeacherProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherProfile"
+
+  /social/profile/{userId}:
+    get:
+      operationId: getTeacherProfileById
+      tags: [social]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Teacher profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherPublicProfile"
+
+  /social/teachers:
+    get:
+      operationId: listTeachers
+      tags: [social]
+      parameters:
+        - name: subject
+          in: query
+          schema: { type: string }
+        - name: city
+          in: query
+          schema: { type: string }
+        - name: search
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Teacher list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeacherSummary"
+
+  /social/connections:
+    get:
+      operationId: listConnections
+      tags: [social]
+      responses:
+        "200":
+          description: Connections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeacherConnection"
+
+  /social/connections/request:
+    post:
+      operationId: requestConnection
+      tags: [social]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestConnectionInput"
+      responses:
+        "201":
+          description: Connection requested
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherConnection"
+
+  /social/connections/{id}/accept:
+    put:
+      operationId: acceptConnection
+      tags: [social]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeacherConnection"
+
+  /social/connections/{id}:
+    delete:
+      operationId: deleteConnection
+      tags: [social]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /social/endorse:
+    post:
+      operationId: endorseSkill
+      tags: [social]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EndorseSkillInput"
+      responses:
+        "200":
+          description: Endorsed/removed
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /social/profile/me/photo:
+    put:
+      operationId: updateMyProfilePhoto
+      tags: [social]
+      summary: Update profile photo URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfilePhotoInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+
+  /social/ministry-announcements:
+    get:
+      operationId: getMinistryAnnouncements
+      tags: [social]
+      summary: Get Ministry of Education public announcements
+      responses:
+        "200":
+          description: Ministry announcements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SocialPost"
+
+  /social/follow/{userId}:
+    post:
+      operationId: followUser
+      tags: [social]
+      summary: Follow a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Now following
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowStatusResponse"
+    delete:
+      operationId: unfollowUser
+      tags: [social]
+      summary: Unfollow a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Unfollowed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowStatusResponse"
+
+  /social/followers/{userId}:
+    get:
+      operationId: getFollowers
+      tags: [social]
+      summary: Get followers of a user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Followers list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FollowerUser"
+
+  /social/following/{userId}:
+    get:
+      operationId: getFollowing
+      tags: [social]
+      summary: Get users that a user is following
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Following list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FollowerUser"
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned upload URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadUrlBody"
+      responses:
+        "200":
+          description: Presigned upload URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RequestUploadUrlResponse"
+
+  /storage/objects/{objectPath}:
+    get:
+      operationId: getStorageObject
+      tags: [storage]
+      summary: Serve a stored object
+      parameters:
+        - name: objectPath
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: File content
+
+  # ===== CHANNELS =====
+  /channels:
+    get:
+      operationId: listMyChannels
+      tags: [channels]
+      responses:
+        "200":
+          description: My channels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Channel"
+    post:
+      operationId: createChannel
+      tags: [channels]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateChannelInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Channel"
+
+  /channels/{id}:
+    get:
+      operationId: getChannel
+      tags: [channels]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Channel detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelDetail"
+
+  /channels/{id}/join:
+    post:
+      operationId: joinChannel
+      tags: [channels]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Joined
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  joined: { type: boolean }
+
+  /channels/{id}/messages:
+    get:
+      operationId: listChannelMessages
+      tags: [channels]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: limit
+          in: query
+          schema: { type: string }
+        - name: before
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChannelMessage"
+    post:
+      operationId: sendChannelMessage
+      tags: [channels]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendChannelMessageInput"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChannelMessage"
+
+  /channels/{id}/messages/{msgId}:
+    delete:
+      operationId: deleteChannelMessage
+      tags: [channels]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: msgId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Deleted
+
+  /dm:
+    get:
+      operationId: listDmThreads
+      tags: [channels]
+      responses:
+        "200":
+          description: DM threads
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DmThread"
+
+  /dm/{userId}:
+    get:
+      operationId: getDmThread
+      tags: [channels]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DirectMessage"
+    post:
+      operationId: sendDirectMessage
+      tags: [channels]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendDirectMessageInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectMessage"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +2042,1135 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    User:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: string }
+        role: { type: string }
+        grade: { type: ["string", "null"] }
+        curriculum: { type: string }
+        subjects:
+          type: array
+          items: { type: string }
+        school: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        status: { type: string }
+        subscriptionStatus: { type: string }
+        subscriptionExpiry: { type: ["string", "null"], format: date-time }
+        trialStartDate: { type: ["string", "null"], format: date-time }
+        referralCode: { type: ["string", "null"] }
+        profilePhotoUrl: { type: ["string", "null"] }
+        coverPhotoUrl: { type: ["string", "null"] }
+        studyStreak: { type: integer }
+        totalStudyMinutes: { type: integer }
+        rejectionReason: { type: ["string", "null"] }
+        isSuperAdmin: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        lastActiveAt: { type: ["string", "null"], format: date-time }
+      required:
+        - id
+        - name
+        - email
+        - role
+        - status
+        - subscriptionStatus
+        - studyStreak
+        - totalStudyMinutes
+        - isSuperAdmin
+        - createdAt
+
+    AuthResponse:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+      required: [user]
+
+    RegisterUserInput:
+      type: object
+      properties:
+        name: { type: string }
+        email: { type: string }
+        password: { type: string }
+        role: { type: string }
+        grade: { type: ["string", "null"] }
+        curriculum: { type: ["string", "null"] }
+        subjects:
+          type: array
+          items: { type: string }
+        school: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        referralCode: { type: ["string", "null"] }
+      required: [name, email, password, role]
+
+    LoginInput:
+      type: object
+      properties:
+        email: { type: string }
+        password: { type: string }
+      required: [email, password]
+
+    ChangePasswordInput:
+      type: object
+      properties:
+        currentPassword: { type: string, minLength: 1 }
+        newPassword: { type: string, minLength: 8 }
+      required: [currentPassword, newPassword]
+
+    MessageResponse:
+      type: object
+      properties:
+        message: { type: string }
+      required: [message]
+
+    UpdateUserInput:
+      type: object
+      properties:
+        name: { type: ["string", "null"] }
+        grade: { type: ["string", "null"] }
+        curriculum: { type: ["string", "null"] }
+        subjects:
+          type: array
+          items: { type: string }
+        school: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        profilePhotoUrl: { type: ["string", "null"] }
+        coverPhotoUrl: { type: ["string", "null"] }
+
+    RejectUserInput:
+      type: object
+      properties:
+        reason: { type: string }
+      required: [reason]
+
+    GrantSubscriptionInput:
+      type: object
+      properties:
+        expiryDate: { type: string, format: date-time }
+        plan: { type: string }
+      required: [expiryDate, plan]
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        userId: { type: integer }
+        name: { type: string }
+        grade: { type: ["string", "null"] }
+        school: { type: ["string", "null"] }
+        score: { type: integer }
+        examsCompleted: { type: integer }
+      required: [userId, name, score, examsCompleted]
+
+    Note:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        subject: { type: string }
+        curriculum: { type: string }
+        level: { type: string }
+        grade: { type: string }
+        topic: { type: string }
+        chapterNumber: { type: ["integer", "null"] }
+        content: { type: string }
+        fileUrl: { type: ["string", "null"] }
+        teacherId: { type: ["integer", "null"] }
+        teacherName: { type: ["string", "null"] }
+        downloads: { type: integer }
+        bookmarks: { type: integer }
+        featured: { type: boolean }
+        status: { type: string }
+        readMinutes: { type: integer }
+        createdAt: { type: string, format: date-time }
+      required:
+        - id
+        - title
+        - subject
+        - level
+        - grade
+        - topic
+        - content
+        - downloads
+        - bookmarks
+        - featured
+        - status
+        - readMinutes
+        - createdAt
+
+    CreateNoteInput:
+      type: object
+      properties:
+        title: { type: string }
+        subject: { type: string }
+        curriculum: { type: ["string", "null"] }
+        level: { type: string }
+        grade: { type: string }
+        topic: { type: string }
+        chapterNumber: { type: ["integer", "null"] }
+        content: { type: string }
+        fileUrl: { type: ["string", "null"] }
+        status: { type: string }
+      required: [title, subject, level, grade, topic, content]
+
+    UpdateNoteInput:
+      type: object
+      properties:
+        title: { type: ["string", "null"] }
+        content: { type: ["string", "null"] }
+        topic: { type: ["string", "null"] }
+        featured: { type: ["boolean", "null"] }
+        status: { type: ["string", "null"] }
+
+    Paper:
+      type: object
+      properties:
+        id: { type: integer }
+        examBoard: { type: string }
+        curriculum: { type: string }
+        subject: { type: string }
+        paperCode: { type: ["string", "null"] }
+        level: { type: string }
+        grade: { type: ["string", "null"] }
+        year: { type: integer }
+        session: { type: ["string", "null"] }
+        paperNumber: { type: ["string", "null"] }
+        fileUrl: { type: ["string", "null"] }
+        markSchemeUrl: { type: ["string", "null"] }
+        downloads: { type: integer }
+        bookmarks: { type: integer }
+        topicTags:
+          type: array
+          items: { type: string }
+        featured: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required:
+        - id
+        - examBoard
+        - subject
+        - level
+        - year
+        - downloads
+        - bookmarks
+        - topicTags
+        - featured
+        - createdAt
+
+    CreatePaperInput:
+      type: object
+      properties:
+        examBoard: { type: string }
+        curriculum: { type: ["string", "null"] }
+        subject: { type: string }
+        paperCode: { type: ["string", "null"] }
+        level: { type: string }
+        grade: { type: ["string", "null"] }
+        year: { type: integer }
+        session: { type: ["string", "null"] }
+        paperNumber: { type: ["string", "null"] }
+        fileUrl: { type: ["string", "null"] }
+        markSchemeUrl: { type: ["string", "null"] }
+        topicTags:
+          type: array
+          items: { type: string }
+      required: [examBoard, subject, level, year]
+
+    Assignment:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        instructions: { type: string }
+        subject: { type: string }
+        grade: { type: string }
+        deadline: { type: string, format: date-time }
+        fileUrl: { type: ["string", "null"] }
+        teacherId: { type: integer }
+        teacherName: { type: ["string", "null"] }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+        submissionCount: { type: integer }
+        mySubmission:
+          oneOf:
+            - $ref: "#/components/schemas/Submission"
+            - type: "null"
+      required:
+        - id
+        - title
+        - instructions
+        - subject
+        - grade
+        - deadline
+        - teacherId
+        - status
+        - createdAt
+        - submissionCount
+
+    CreateAssignmentInput:
+      type: object
+      properties:
+        title: { type: string }
+        instructions: { type: string }
+        subject: { type: string }
+        grade: { type: string }
+        deadline: { type: string, format: date-time }
+        fileUrl: { type: ["string", "null"] }
+        status: { type: string }
+      required: [title, instructions, subject, grade, deadline]
+
+    Submission:
+      type: object
+      properties:
+        id: { type: integer }
+        assignmentId: { type: integer }
+        assignmentTitle: { type: ["string", "null"] }
+        studentId: { type: integer }
+        studentName: { type: string }
+        textResponse: { type: ["string", "null"] }
+        fileUrl: { type: ["string", "null"] }
+        submittedAt: { type: string, format: date-time }
+        grade: { type: ["integer", "null"] }
+        feedback: { type: ["string", "null"] }
+        gradedAt: { type: ["string", "null"], format: date-time }
+        gradedBy: { type: ["string", "null"] }
+      required: [id, assignmentId, studentId, studentName, submittedAt]
+
+    SubmitAssignmentInput:
+      type: object
+      properties:
+        textResponse: { type: ["string", "null"] }
+        fileUrl: { type: ["string", "null"] }
+
+    GradeSubmissionInput:
+      type: object
+      properties:
+        grade: { type: integer }
+        feedback: { type: string }
+      required: [grade, feedback]
+
+    MockExam:
+      type: object
+      properties:
+        id: { type: integer }
+        studentId: { type: integer }
+        subject: { type: string }
+        curriculum: { type: string }
+        grade: { type: string }
+        year: { type: ["integer", "null"] }
+        paperRef: { type: ["string", "null"] }
+        score: { type: integer }
+        totalMarks: { type: integer }
+        timeSpentMinutes: { type: integer }
+        completedAt: { type: string, format: date-time }
+      required: [id, studentId, subject, grade, score, totalMarks, timeSpentMinutes, completedAt]
+
+    CreateMockExamInput:
+      type: object
+      properties:
+        subject: { type: string }
+        curriculum: { type: ["string", "null"] }
+        grade: { type: string }
+        year: { type: ["integer", "null"] }
+        paperRef: { type: ["string", "null"] }
+        score: { type: integer }
+        totalMarks: { type: integer }
+        timeSpentMinutes: { type: integer }
+        topicResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/TopicResultInput"
+      required: [subject, grade, score, totalMarks, timeSpentMinutes]
+
+    Bookmark:
+      type: object
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        itemType: { type: string }
+        itemId: { type: integer }
+        title: { type: ["string", "null"] }
+        savedAt: { type: string, format: date-time }
+      required: [id, userId, itemType, itemId, savedAt]
+
+    CreateBookmarkInput:
+      type: object
+      properties:
+        itemType: { type: string }
+        itemId: { type: integer }
+        title: { type: ["string", "null"] }
+      required: [itemType, itemId]
+
+    Notification:
+      type: object
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        type: { type: string }
+        title: { type: string }
+        message: { type: string }
+        read: { type: boolean }
+        link: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, userId, type, title, message, read, createdAt]
+
+    Announcement:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        message: { type: string }
+        target: { type: string }
+        priority: { type: string }
+        createdBy: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, title, message, target, priority, createdAt]
+
+    CreateAnnouncementInput:
+      type: object
+      properties:
+        title: { type: string }
+        message: { type: string }
+        target: { type: string }
+        priority: { type: string }
+      required: [title, message, target, priority]
+
+    Subscription:
+      type: object
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        userName: { type: ["string", "null"] }
+        userEmail: { type: ["string", "null"] }
+        plan: { type: string }
+        status: { type: string }
+        startDate: { type: string, format: date-time }
+        expiryDate: { type: string, format: date-time }
+        paymentMethod: { type: string }
+        amountPaid: { type: number }
+        proofUrl: { type: ["string", "null"] }
+        paymentReference: { type: ["string", "null"] }
+        senderPhone: { type: ["string", "null"] }
+        rejectionReason: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+      required: [id, userId, plan, status, startDate, expiryDate, paymentMethod, amountPaid, createdAt]
+
+    CheckoutInput:
+      type: object
+      properties:
+        plan: { type: string }
+        paymentMethod: { type: string }
+        proofUrl: { type: string }
+        paymentReference: { type: string }
+        senderPhone: { type: string }
+      required: [plan, paymentMethod]
+
+    RejectSubscriptionInput:
+      type: object
+      properties:
+        reason: { type: string }
+      required: [reason]
+
+    PaymentSettings:
+      type: object
+      properties:
+        ecocashNumber: { type: string }
+        innbucksNumber: { type: string }
+        onemoneyNumber: { type: string }
+        whatsappNumber: { type: string }
+        instructions: { type: string }
+      required: [ecocashNumber, innbucksNumber, onemoneyNumber, whatsappNumber, instructions]
+
+    PaymentSettingsInput:
+      type: object
+      properties:
+        ecocashNumber: { type: string }
+        innbucksNumber: { type: string }
+        onemoneyNumber: { type: string }
+        whatsappNumber: { type: string }
+        instructions: { type: string }
+      required: [ecocashNumber, innbucksNumber, onemoneyNumber, whatsappNumber, instructions]
+
+    StudentDashboard:
+      type: object
+      properties:
+        greeting: { type: string }
+        studyStreak: { type: integer }
+        notesReadThisWeek: { type: integer }
+        papersAttempted: { type: integer }
+        assignmentsDue: { type: integer }
+        weeklyGoalMinutes: { type: integer }
+        weeklyMinutesCompleted: { type: integer }
+        upcomingAssignments:
+          type: array
+          items: { $ref: "#/components/schemas/Assignment" }
+        recentNotes:
+          type: array
+          items: { $ref: "#/components/schemas/Note" }
+        featuredPapers:
+          type: array
+          items: { $ref: "#/components/schemas/Paper" }
+        motivationalQuote: { type: string }
+      required:
+        - greeting
+        - studyStreak
+        - notesReadThisWeek
+        - papersAttempted
+        - assignmentsDue
+        - weeklyGoalMinutes
+        - weeklyMinutesCompleted
+        - upcomingAssignments
+        - recentNotes
+        - featuredPapers
+        - motivationalQuote
+
+    TeacherDashboard:
+      type: object
+      properties:
+        totalStudents: { type: integer }
+        pendingSubmissions: { type: integer }
+        notesUploaded: { type: integer }
+        papersUploaded: { type: integer }
+        recentSubmissions:
+          type: array
+          items: { $ref: "#/components/schemas/Submission" }
+        myAssignments:
+          type: array
+          items: { $ref: "#/components/schemas/Assignment" }
+      required:
+        - totalStudents
+        - pendingSubmissions
+        - notesUploaded
+        - papersUploaded
+        - recentSubmissions
+        - myAssignments
+
+    AdminDashboard:
+      type: object
+      properties:
+        totalUsers: { type: integer }
+        totalStudents: { type: integer }
+        totalTeachers: { type: integer }
+        totalParents: { type: integer }
+        activeSubscriptions: { type: integer }
+        monthlyRecurringRevenue: { type: number }
+        totalRevenue: { type: number }
+        pendingApprovals: { type: integer }
+        totalPapers: { type: integer }
+        totalNotes: { type: integer }
+        paperDownloads: { type: integer }
+        newRegistrationsThisWeek: { type: integer }
+        activeUsersToday: { type: integer }
+        activeUsersThisWeek: { type: integer }
+      required:
+        - totalUsers
+        - totalStudents
+        - totalTeachers
+        - totalParents
+        - activeSubscriptions
+        - monthlyRecurringRevenue
+        - totalRevenue
+        - pendingApprovals
+        - totalPapers
+        - totalNotes
+        - paperDownloads
+        - newRegistrationsThisWeek
+        - activeUsersToday
+        - activeUsersThisWeek
+
+    Analytics:
+      type: object
+      properties:
+        userGrowth:
+          type: array
+          items:
+            type: object
+            properties:
+              date: { type: string }
+              users: { type: integer }
+            required: [date, users]
+        topPapers:
+          type: array
+          items:
+            type: object
+            properties:
+              title: { type: string }
+              downloads: { type: integer }
+            required: [title, downloads]
+        subjectActivity:
+          type: array
+          items:
+            type: object
+            properties:
+              subject: { type: string }
+              count: { type: integer }
+            required: [subject, count]
+        topSchools:
+          type: array
+          items:
+            type: object
+            properties:
+              school: { type: string }
+              students: { type: integer }
+            required: [school, students]
+      required: [userGrowth, topPapers, subjectActivity, topSchools]
+
+    SyllabusTopic:
+      type: object
+      properties:
+        id: { type: integer }
+        subject: { type: string }
+        examBoard: { type: string }
+        curriculum: { type: string }
+        level: { type: string }
+        grade: { type: string }
+        strand: { type: string }
+        topic: { type: string }
+        subtopics:
+          type: array
+          items: { type: string }
+        learningObjectives: { type: ["string", "null"] }
+      required: [id, subject, examBoard, level, grade, strand, topic, subtopics]
+
+    CurriculumLevel:
+      type: object
+      properties:
+        value: { type: string }
+        label: { type: string }
+        grades:
+          type: array
+          items: { type: string }
+        subjects:
+          type: array
+          items: { type: string }
+      required: [value, label, grades, subjects]
+
+    Curriculum:
+      type: object
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        name: { type: string }
+        country: { type: ["string", "null"] }
+        levels:
+          type: array
+          items:
+            $ref: "#/components/schemas/CurriculumLevel"
+        active: { type: boolean }
+        sortOrder: { type: integer }
+      required: [id, code, name, levels, active, sortOrder]
+
+    CreateCurriculumInput:
+      type: object
+      properties:
+        code: { type: string }
+        name: { type: string }
+        country: { type: ["string", "null"] }
+        levels:
+          type: array
+          items:
+            $ref: "#/components/schemas/CurriculumLevel"
+        active: { type: boolean }
+        sortOrder: { type: integer }
+      required: [code, name, levels]
+
+    UpdateCurriculumInput:
+      type: object
+      properties:
+        name: { type: ["string", "null"] }
+        country: { type: ["string", "null"] }
+        levels:
+          type: array
+          items:
+            $ref: "#/components/schemas/CurriculumLevel"
+        active: { type: ["boolean", "null"] }
+        sortOrder: { type: ["integer", "null"] }
+
+    PlannerSlot:
+      type: object
+      properties:
+        id: { type: integer }
+        studentId: { type: integer }
+        weekOf: { type: string }
+        day: { type: string }
+        subject: { type: string }
+        topic: { type: ["string", "null"] }
+        source: { type: ["string", "null"] }
+        durationMinutes: { type: integer }
+        time: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, studentId, weekOf, day, subject, durationMinutes, time, createdAt]
+
+    CreatePlannerSlotInput:
+      type: object
+      properties:
+        weekOf: { type: string }
+        day: { type: string }
+        subject: { type: string }
+        topic: { type: ["string", "null"] }
+        durationMinutes: { type: integer }
+        time: { type: string }
+      required: [weekOf, day, subject, durationMinutes, time]
+
+    ExamDate:
+      type: object
+      properties:
+        id: { type: integer }
+        studentId: { type: integer }
+        curriculum: { type: string }
+        subject: { type: string }
+        paper: { type: ["string", "null"] }
+        examDate: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, studentId, curriculum, subject, examDate, createdAt]
+
+    CreateExamDateInput:
+      type: object
+      properties:
+        subject: { type: string }
+        paper: { type: ["string", "null"] }
+        examDate: { type: string }
+        curriculum: { type: ["string", "null"] }
+      required: [subject, examDate]
+
+    TopicResultInput:
+      type: object
+      properties:
+        topic: { type: string }
+        correct: { type: integer }
+        total: { type: integer }
+      required: [topic, correct, total]
+
+    WeakTopic:
+      type: object
+      properties:
+        subject: { type: string }
+        topic: { type: string }
+        correct: { type: integer }
+        total: { type: integer }
+        accuracy: { type: integer }
+        attempts: { type: integer }
+      required: [subject, topic, correct, total, accuracy, attempts]
+
+    ExamReadiness:
+      type: object
+      properties:
+        subject: { type: string }
+        examDate: { type: ["string", "null"] }
+        paper: { type: ["string", "null"] }
+        daysUntil: { type: ["integer", "null"] }
+        totalTopics: { type: integer }
+        attemptedTopics: { type: integer }
+        masteredTopics: { type: integer }
+        readiness: { type: integer }
+        weakTopics:
+          type: array
+          items: { type: string }
+      required: [subject, totalTopics, attemptedTopics, masteredTopics, readiness, weakTopics]
+
+    StudyPlanInput:
+      type: object
+      properties:
+        weeklyMinutes: { type: integer }
+        weekOf: { type: ["string", "null"] }
+      required: [weeklyMinutes]
+
+    StudyPlanResult:
+      type: object
+      properties:
+        summary: { type: string }
+        slots:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlannerSlot"
+      required: [summary, slots]
+
+    AnthropicConversation:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, title, createdAt]
+
+    AnthropicMessage:
+      type: object
+      properties:
+        id: { type: integer }
+        conversationId: { type: integer }
+        role: { type: string }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, conversationId, role, content, createdAt]
+
+    CreateAnthropicConversationInput:
+      type: object
+      properties:
+        title: { type: string }
+      required: [title]
+
+    SendAnthropicMessageInput:
+      type: object
+      properties:
+        content: { type: string }
+        subject: { type: ["string", "null"] }
+        level: { type: ["string", "null"] }
+        grade: { type: ["string", "null"] }
+      required: [content]
+
+    AnthropicConversationWithMessages:
+      type: object
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        createdAt: { type: string, format: date-time }
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnthropicMessage"
+      required: [id, title, createdAt, messages]
+
+    AnthropicError:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+
+    # ─── Social ──────────────────────────────────────────────────────────────
+
+    TeacherProfile:
+      type: object
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        headline: { type: ["string", "null"] }
+        bio: { type: ["string", "null"] }
+        subjectsTaught: { type: ["string", "null"] }
+        gradeLevels: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        country: { type: ["string", "null"] }
+        languagesSpoken: { type: ["string", "null"] }
+        yearsExperience: { type: ["integer", "null"] }
+        availabilityStatus: { type: ["string", "null"] }
+        coverBannerUrl: { type: ["string", "null"] }
+        isVerified: { type: boolean }
+        workHistory: { type: ["string", "null"] }
+        education: { type: ["string", "null"] }
+        skills: { type: ["string", "null"] }
+        certifications: { type: ["string", "null"] }
+        followersCount: { type: ["integer", "null"] }
+        followingCount: { type: ["integer", "null"] }
+        updatedAt: { type: string, format: date-time }
+      required: [id, userId, isVerified, updatedAt]
+
+    UpdateTeacherProfileInput:
+      type: object
+      properties:
+        headline: { type: string }
+        bio: { type: string }
+        subjectsTaught: { type: string }
+        gradeLevels: { type: string }
+        city: { type: string }
+        country: { type: string }
+        languagesSpoken: { type: string }
+        yearsExperience: { type: integer }
+        availabilityStatus: { type: string }
+        coverBannerUrl: { type: string }
+        workHistory: { type: string }
+        education: { type: string }
+        skills: { type: string }
+        certifications: { type: string }
+
+    TeacherPublicProfile:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        role: { type: string }
+        school: { type: ["string", "null"] }
+        profilePhotoUrl: { type: ["string", "null"] }
+        grade: { type: ["string", "null"] }
+        profile:
+          nullable: true
+          $ref: "#/components/schemas/TeacherProfile"
+        endorsements:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              skill: { type: string }
+              endorserId: { type: integer }
+            required: [id, skill, endorserId]
+      required: [id, name, role]
+
+    TeacherSummary:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        school: { type: ["string", "null"] }
+        profilePhotoUrl: { type: ["string", "null"] }
+        headline: { type: ["string", "null"] }
+        subjectsTaught: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        country: { type: ["string", "null"] }
+        isVerified: { type: ["boolean", "null"] }
+        availabilityStatus: { type: ["string", "null"] }
+      required: [id, name]
+
+    SocialPost:
+      type: object
+      properties:
+        id: { type: integer }
+        content: { type: string }
+        postType: { type: string }
+        imageUrl: { type: ["string", "null"] }
+        videoUrl: { type: ["string", "null"] }
+        hashtags: { type: ["string", "null"] }
+        isPinned: { type: boolean }
+        reactionsCount: { type: integer }
+        commentsCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        authorId: { type: integer }
+        authorName: { type: ["string", "null"] }
+        authorPhoto: { type: ["string", "null"] }
+        authorSchool: { type: ["string", "null"] }
+        authorRole: { type: ["string", "null"] }
+      required: [id, content, postType, isPinned, reactionsCount, commentsCount, createdAt, authorId]
+
+    CreateSocialPostInput:
+      type: object
+      properties:
+        content: { type: string }
+        postType: { type: string }
+        imageUrl: { type: string }
+        videoUrl: { type: string }
+        hashtags: { type: string }
+      required: [content]
+
+    UpdateProfilePhotoInput:
+      type: object
+      properties:
+        profilePhotoUrl: { type: string }
+      required: [profilePhotoUrl]
+
+    FollowStatusResponse:
+      type: object
+      properties:
+        following: { type: boolean }
+      required: [following]
+
+    FollowerUser:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        profilePhotoUrl: { type: ["string", "null"] }
+        school: { type: ["string", "null"] }
+      required: [id, name]
+
+    RequestUploadUrlBody:
+      type: object
+      properties:
+        name: { type: string }
+        size: { type: integer }
+        contentType: { type: string }
+      required: [name, size, contentType]
+
+    RequestUploadUrlResponse:
+      type: object
+      properties:
+        uploadURL: { type: string }
+        objectPath: { type: string }
+        metadata:
+          type: object
+          properties:
+            name: { type: string }
+            size: { type: integer }
+            contentType: { type: string }
+          required: [name, size, contentType]
+      required: [uploadURL, objectPath, metadata]
+
+    CreatePostCommentInput:
+      type: object
+      properties:
+        content: { type: string }
+      required: [content]
+
+    RequestConnectionInput:
+      type: object
+      properties:
+        recipientId: { type: integer }
+      required: [recipientId]
+
+    EndorseSkillInput:
+      type: object
+      properties:
+        profileUserId: { type: integer }
+        skill: { type: string }
+      required: [profileUserId, skill]
+
+    SendChannelMessageInput:
+      type: object
+      properties:
+        content: { type: string }
+        messageType: { type: string }
+        replyToId: { type: integer }
+      required: [content]
+
+    SendDirectMessageInput:
+      type: object
+      properties:
+        content: { type: string }
+      required: [content]
+
+    ReactInput:
+      type: object
+      properties:
+        reactionType: { type: string }
+      required: [reactionType]
+
+    PostReaction:
+      type: object
+      properties:
+        id: { type: integer }
+        postId: { type: integer }
+        userId: { type: integer }
+        reactionType: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, postId, userId, reactionType, createdAt]
+
+    PostComment:
+      type: object
+      properties:
+        id: { type: integer }
+        postId: { type: integer }
+        authorId: { type: integer }
+        authorName: { type: ["string", "null"] }
+        authorPhoto: { type: ["string", "null"] }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+      required: [id, postId, authorId, content, createdAt]
+
+    TeacherConnection:
+      type: object
+      properties:
+        id: { type: integer }
+        requesterId: { type: integer }
+        recipientId: { type: integer }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+        otherName: { type: ["string", "null"] }
+        otherPhoto: { type: ["string", "null"] }
+        otherSchool: { type: ["string", "null"] }
+      required: [id, requesterId, recipientId, status, createdAt]
+
+    # ─── Channels ────────────────────────────────────────────────────────────
+
+    Channel:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        school: { type: string }
+        grade: { type: ["string", "null"] }
+        channelType: { type: string }
+        subject: { type: ["string", "null"] }
+        description: { type: ["string", "null"] }
+        membersCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        myRole: { type: ["string", "null"] }
+      required: [id, name, school, channelType, membersCount, createdAt]
+
+    ChannelDetail:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        school: { type: string }
+        grade: { type: ["string", "null"] }
+        channelType: { type: string }
+        subject: { type: ["string", "null"] }
+        description: { type: ["string", "null"] }
+        membersCount: { type: integer }
+        createdAt: { type: string, format: date-time }
+        members:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              name: { type: string }
+              role: { type: string }
+              profilePhotoUrl: { type: ["string", "null"] }
+            required: [id, name, role]
+      required: [id, name, school, channelType, membersCount, createdAt, members]
+
+    CreateChannelInput:
+      type: object
+      properties:
+        name: { type: string }
+        school: { type: string }
+        grade: { type: string }
+        channelType: { type: string }
+        subject: { type: string }
+        description: { type: string }
+      required: [name, school]
+
+    ChannelMessage:
+      type: object
+      properties:
+        id: { type: integer }
+        channelId: { type: integer }
+        senderId: { type: integer }
+        senderName: { type: ["string", "null"] }
+        senderPhoto: { type: ["string", "null"] }
+        senderRole: { type: ["string", "null"] }
+        content: { type: string }
+        messageType: { type: string }
+        fileUrl: { type: ["string", "null"] }
+        isPinned: { type: boolean }
+        replyToId: { type: ["integer", "null"] }
+        isDeleted: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        editedAt: { type: ["string", "null"], format: date-time }
+      required: [id, channelId, senderId, content, messageType, isPinned, isDeleted, createdAt]
+
+    DirectMessage:
+      type: object
+      properties:
+        id: { type: integer }
+        senderId: { type: integer }
+        recipientId: { type: integer }
+        content: { type: string }
+        fileUrl: { type: ["string", "null"] }
+        isRead: { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required: [id, senderId, recipientId, content, isRead, createdAt]
+
+    DmThread:
+      type: object
+      properties:
+        otherId: { type: integer }
+        otherUser:
+          nullable: true
+          type: object
+          properties:
+            id: { type: integer }
+            name: { type: string }
+            profilePhotoUrl: { type: ["string", "null"] }
+            role: { type: string }
+          required: [id, name, role]
+        lastMessage:
+          $ref: "#/components/schemas/DirectMessage"
+      required: [otherId, lastMessage]

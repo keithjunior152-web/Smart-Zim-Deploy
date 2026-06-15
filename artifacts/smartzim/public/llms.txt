@@ -1,0 +1,31 @@
+# SmartZim
+
+SmartZim is a Zimbabwe-focused learning and exam-prep platform for students, teachers, and parents. It covers ZIMSEC and Cambridge curricula and offers AI tutoring, past papers, notes, assignments, mock exams, and school administration tools.
+
+## Public pages (indexable)
+
+- / — Landing / home page
+- /ministry — Ministry of Primary and Secondary Education (MoPSE) public announcements
+- /privacy — Privacy policy
+- /terms — Terms of service
+
+## Sitemap
+
+https://smartzim.replit.app/sitemap.xml
+
+## Utility pages (not for indexing)
+
+These pages require user action or authentication and are marked `noindex, nofollow`. They are also disallowed in robots.txt — do not index them:
+
+- /login — Sign in
+- /register — Create an account
+- /pending — Account pending approval
+- /rejected — Registration not approved
+
+## Teacher profiles
+
+Public teacher profile pages (/teachers/:userId) exist but are not currently intended for indexing: they are rendered client-side and do not yet emit unique canonical HTML or per-profile metadata. Do not index them until per-profile canonical HTML is available.
+
+## Preferred crawl guidance
+
+Index only the public pages listed under "Public pages (indexable)" above. Authenticated app pages (/app/*) require a login and should not be indexed.

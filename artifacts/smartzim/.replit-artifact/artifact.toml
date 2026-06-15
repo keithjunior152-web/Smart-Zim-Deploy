@@ -1,0 +1,33 @@
+kind = "web"
+previewPath = "/"
+title = "SmartZim Learning"
+version = "1.0.0"
+id = "artifacts/smartzim"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22156
+
+[services.development]
+run = "pnpm --filter @workspace/smartzim run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/smartzim", "run", "build" ]
+publicDir = "artifacts/smartzim/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22156"
+BASE_PATH = "/"
+SITE_ORIGIN = "https://smartzim.vercel.app"
+NODE_ENV = "development"

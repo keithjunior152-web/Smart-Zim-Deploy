@@ -1,0 +1,131 @@
+Build a full-stack, globally scalable Teacher & Student Social Communication Platform integrated into the existing Smart Lane AI-powered app. This platform combines LinkedIn-style professional networking for teachers, classroom-based student access, real-time messaging, verified profiles, and smart search — all within a secure, privacy-first, globally scalable architecture.
+👤 USER PROFILES
+Teacher Profiles (LinkedIn-Style):
+Verified registration with credential upload (certificates, degrees, school ID)
+Profile fields: full name, headline (e.g. "Math Teacher | 10 years exp"), profile photo, cover banner, bio, subjects taught, grade levels, school name, city/country, languages spoken, years of experience, availability status
+Work History section: list previous schools, roles, and dates (like LinkedIn experience)
+Education section: degrees, institutions, graduation years
+Skills & Endorsements: other teachers can endorse specific skills (e.g. "Algebra", "Classroom Management")
+Recommendations: teachers can write and receive written recommendations from colleagues
+Certifications section: upload and display teaching licenses and professional certificates
+Featured Posts section: pin important updates or resources to top of profile
+Vacancy Notice board: post job openings, collaboration requests, or substitute needs
+"Open to Work" / "Open to Collaborate" toggle visible on profile card
+Badge system: Verified ✓, Top Contributor 🏆, Featured 🌟
+Student Profiles:
+Registration requires: full name, email, school name (selected from a verified school directory or manually entered), class/grade (e.g. Grade 8B, Year 10, Class 3A), date of birth
+Age-gated: parental consent flow for users under 13 (COPPA compliant)
+Profile shows: name, school, class, subjects of interest, country
+Students can follow teachers and join class-specific or subject-based discussion threads
+Students cannot change school name or class without admin approval (prevents impersonation)
+Activity feed showing posts and updates from followed teachers and classmates
+🔐 LOGIN & AUTHENTICATION
+Teacher Login:
+Email + password with 2FA
+OAuth via Google or Microsoft (school SSO compatible)
+Credential verification step before full access is granted
+Student Login:
+Must register and log in with: School Name + Class/Grade + Personal credentials
+School name and class are locked fields post-registration
+Login screen includes a "School Name" and "Class" field alongside email/password
+Students are automatically grouped into their school's private space and class channel upon login
+Parent accounts can be linked to monitor activity (optional)
+💬 LINKEDIN-STYLE TEACHER SOCIAL FEED
+Home Feed: shows posts, updates, vacancy notices, and articles from connections and followed teachers — ranked by relevance and recency
+Post types: text updates, images, documents/resources, polls, vacancy notices, event announcements
+Reactions: Like 👍, Insightful 💡, Support ❤️, Celebrate 🎉
+Comments & threaded replies on all posts
+Share / Repost to amplify content across the network
+"Write an Article" feature: long-form blog-style posts saved to teacher profile
+Hashtag system: #mathematics #primaryschool #teachervacancy for discoverability
+Notifications: new connection, post reaction, comment, endorsement, message
+🏫 CLASS-BASED STUDENT COMMUNICATION
+Upon login, students are placed into their School Space and Class Channel automatically
+Class Channel (e.g. "St. Mary's High — Grade 10B"): private group chat only accessible to verified students of that class and their assigned teachers
+Cross-Class Channels: school admins or teachers can open shared topic channels across classes (e.g. "Science Club — All Grade 10")
+Inter-School Channels: teachers can create moderated global subject channels where students from different schools can interact (e.g. "Global Debate Club — Grade 9")
+Students can message classmates directly (DMs between students in the same class only, unless teacher-approved for cross-class)
+Teachers can broadcast announcements to their class channel
+Assignment Threads: teachers post tasks, students reply in-thread; keeps communication organized by topic
+💬 REAL-TIME MESSAGING & CHAT
+For Teachers (LinkedIn-style InMail + Channels):
+Direct Messages (DMs): one-on-one encrypted chat between connected teachers
+Connection Request required before DM (like LinkedIn) — or teachers can enable "Open DMs"
+Group Chats: teachers can form subject- or region-based group chats
+Public Subject Channels: e.g. #mathematics-global, #science-teachers — open to all verified teachers
+Vacancy Discussion Threads: dedicated thread per vacancy post for interested applicants
+Message types: text, file attachments, images, voice notes, resource links
+Typing indicators, read receipts, online/offline presence
+For Students:
+Class Channel DMs: students can DM classmates within the same school and class
+Teacher-to-Student DMs: requires teacher to initiate OR student opt-in with parent approval
+Students in cross-class or inter-school channels can post in those channels but cannot DM outside their class without approval
+No student can DM a teacher unsolicited — must go through class channel or teacher-initiated contact
+Shared Features:
+Thread replies inside all channels
+Pinned messages per channel
+AI-powered content moderation on all messages
+Report & block for all users
+Message search and history
+🔍 SEARCH & DISCOVERY
+Teacher Search: filter by subject, grade level, school, city, country, language, availability, "Open to Collaborate"
+Student Search (teachers only): search students by school and class — not publicly searchable by other students
+School Directory Search: find schools, browse their teacher roster and open vacancies
+Smart AI Recommendations: suggest teachers to connect with based on subject overlap, location, mutual connections
+Trending Topics: popular hashtags, discussions, and vacancy notices surfaced globally
+Map View: visual map of teacher distribution by country/region (Leaflet.js or Google Maps)
+🔒 PRIVACY & SECURITY
+Role-based access: admin, verified_teacher, unverified_teacher, student, parent
+End-to-end encryption for all private DMs
+Teacher profiles: Public / Connections Only / Private
+Student profiles: only visible to teachers at their school and classmates — never publicly indexed
+Students cannot be searched or found by teachers outside their school unless enrolled in a shared inter-school channel
+GDPR + COPPA compliant data handling
+2FA for all teacher accounts
+Rate limiting, spam protection, and file upload malware scanning
+Admin moderation dashboard: review flagged content, manage users, monitor channels
+🗂️ WORKFLOW DESIGN
+Teacher Onboarding:
+Register → upload credentials → await verification (AI doc check + admin review)
+Build LinkedIn-style profile
+Get Verified badge → access full feed, DMs, channels, and vacancy board
+Connect with other teachers → unlock DMs
+Student Onboarding:
+Register with: name, email, school name, class/grade, DOB
+If under 13 → parent consent email sent
+Auto-joined to School Space + Class Channel
+Can follow teachers, join inter-school channels (if teacher-approved), and DM classmates
+Search → Connect → Chat (Teachers):
+Search by subject/location/school
+View public profile
+Send Connection Request → accepted → DM unlocked
+Collaborate, share resources, discuss vacancies
+Class Communication Flow (Students):
+Student logs in with school + class credentials
+Lands on Class Channel dashboard
+Sees teacher announcements, assignment threads, classmate messages
+Can join approved cross-class or inter-school channels
+DMs classmates directly; responds to teacher threads
+Vacancy Flow:
+Teacher posts vacancy (school, subject, grade, dates, type)
+Appears in global vacancy feed + teacher's profile
+Interested teachers click "Express Interest" → opens DM thread
+Poster marks vacancy as filled when done
+🏗️ TECH STACK
+Frontend: React + Tailwind CSS (integrated into Smart Lane UI)
+Backend: Node.js + Express or Next.js API routes
+Database: PostgreSQL (profiles, posts, messages, school/class structure) + Redis (presence, sessions, caching)
+Real-time: Socket.io or Supabase Realtime
+Auth: Supabase Auth or Auth.js with OAuth (Google/Microsoft SSO); custom school+class field on student login
+Storage: Supabase Storage or AWS S3 for photos, files, voice notes
+Search: Algolia or Elasticsearch for fast filtered global search
+AI moderation: OpenAI Moderation API or custom classifier
+Mapping: Leaflet.js for teacher map view
+Notifications: Push notifications via Firebase Cloud Messaging
+📈 SCALABILITY
+Multi-tenant DB schema: each school is a tenant with isolated student spaces
+Pagination + infinite scroll on all feeds and search results
+CDN delivery for all media
+Background job queues (BullMQ) for verification, notifications, moderation
+Multi-language UI with i18n from day one
+Admin analytics dashboard: users by country, active chats, class channel activity, vacancy trends, flagged content
