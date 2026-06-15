@@ -1,2 +1,1 @@
-export { anthropic } from "./client";
-export { batchProcess, batchProcessWithSSE, isRateLimitError, type BatchOptions } from "./batch";
+export { gemini, generateText, generateWithParts, streamChat, GEMINI_MODEL, type GeminiMessage } from "./client";

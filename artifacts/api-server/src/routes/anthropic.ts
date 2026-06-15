@@ -2,13 +2,13 @@ import { Router, type IRouter } from "express";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import multer from "multer";
 import { db, conversations, messages, examDates, topicAttempts, plannerSlots, type User } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { streamChat, type GeminiMessage } from "@workspace/integrations-anthropic-ai";
 import { requireAuth } from "../lib/auth";
 import { encryptMessage, decryptMessage } from "../lib/crypto";
+import type { Part } from "@google/generative-ai";
 
 const router: IRouter = Router();
 
-// 12 MB upload cap, in-memory (we forward straight to Anthropic as base64)
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 12 * 1024 * 1024 },
@@ -60,10 +60,7 @@ router.get("/anthropic/conversations/:id", requireAuth(), async (req, res): Prom
   const me = (req as unknown as { user: User }).user;
   const id = Number(req.params.id);
   const c = await ensureOwned(me.id, id);
-  if (!c) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
+  if (!c) { res.status(404).json({ error: "Not found" }); return; }
   const msgs = await db.select().from(messages).where(eq(messages.conversationId, id)).orderBy(asc(messages.createdAt));
   res.json({
     id: c.id,
@@ -83,10 +80,7 @@ router.delete("/anthropic/conversations/:id", requireAuth(), async (req, res): P
   const me = (req as unknown as { user: User }).user;
   const id = Number(req.params.id);
   const c = await ensureOwned(me.id, id);
-  if (!c) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
+  if (!c) { res.status(404).json({ error: "Not found" }); return; }
   await db.delete(conversations).where(eq(conversations.id, id));
   res.status(204).end();
 });
@@ -95,15 +89,8 @@ router.get("/anthropic/conversations/:id/messages", requireAuth(), async (req, r
   const me = (req as unknown as { user: User }).user;
   const id = Number(req.params.id);
   const c = await ensureOwned(me.id, id);
-  if (!c) {
-    res.status(404).json({ error: "Not found" });
-    return;
-  }
-  const msgs = await db
-    .select()
-    .from(messages)
-    .where(eq(messages.conversationId, id))
-    .orderBy(asc(messages.createdAt));
+  if (!c) { res.status(404).json({ error: "Not found" }); return; }
+  const msgs = await db.select().from(messages).where(eq(messages.conversationId, id)).orderBy(asc(messages.createdAt));
   res.json(
     msgs.map((m) => ({
       id: m.id,
@@ -125,13 +112,9 @@ router.post(
     const file = (req as unknown as { file?: Express.Multer.File }).file;
     const rawContent = String(req.body?.content ?? "").trim();
 
-    // If there's a file we accept an empty prompt — the AI will analyze the file.
     const content = rawContent || (file ? `Please analyse the attached ${file.originalname} and answer every question in it. Show working clearly.` : "");
 
-    if (!content && !file) {
-      res.status(400).json({ error: "Empty message" });
-      return;
-    }
+    if (!content && !file) { res.status(400).json({ error: "Empty message" }); return; }
 
     if (file) {
       const isImage = ALLOWED_IMAGE_TYPES.has(file.mimetype);
@@ -143,16 +126,13 @@ router.post(
     }
 
     const c = await ensureOwned(me.id, id);
-    if (!c) {
-      res.status(404).json({ error: "Conversation not found" });
-      return;
-    }
+    if (!c) { res.status(404).json({ error: "Conversation not found" }); return; }
 
-    // Persist user message (with file note for history display)
+    // Persist user message
     const persistedContent = file ? `[Uploaded: ${file.originalname}]\n\n${content}` : content;
     await db.insert(messages).values({ conversationId: id, role: "user", content: encryptMessage(persistedContent) });
 
-    // Build chat history (text-only, the attachment is only attached to the latest turn)
+    // Load full history
     const historyRows = await db
       .select()
       .from(messages)
@@ -160,23 +140,16 @@ router.post(
       .orderBy(asc(messages.createdAt));
     const history = historyRows.map((m) => ({ ...m, content: decryptMessage(m.content) }));
 
-    // Exam-focused context: upcoming exam dates + weakest topics (students only).
+    // Student personalisation context
     let examLine: string | null = null;
     let weakLine: string | null = null;
     let planLine: string | null = null;
     if (me.role === "student") {
       const today = new Date().toISOString().slice(0, 10);
-      const upcomingExams = await db
-        .select()
-        .from(examDates)
-        .where(eq(examDates.studentId, me.id))
-        .orderBy(asc(examDates.examDate))
-        .limit(20);
+      const upcomingExams = await db.select().from(examDates).where(eq(examDates.studentId, me.id)).orderBy(asc(examDates.examDate)).limit(20);
       const future = upcomingExams.filter((e) => e.examDate >= today).slice(0, 5);
       if (future.length > 0) {
-        examLine =
-          "Upcoming exams: " +
-          future.map((e) => `${e.subject}${e.paper ? ` (${e.paper})` : ""} on ${e.examDate}`).join("; ") + ".";
+        examLine = "Upcoming exams: " + future.map((e) => `${e.subject}${e.paper ? ` (${e.paper})` : ""} on ${e.examDate}`).join("; ") + ".";
       }
       const aggregates = await db
         .select({
@@ -194,13 +167,8 @@ router.post(
         .sort((x, y) => x.acc - y.acc)
         .slice(0, 6);
       if (weak.length > 0) {
-        weakLine =
-          "Weak topics to prioritize (low practice accuracy): " +
-          weak.map((w) => `${w.subject} — ${w.topic} (${w.acc}%)`).join("; ") +
-          ". Steer the student toward these when relevant.";
+        weakLine = "Weak topics to prioritize: " + weak.map((w) => `${w.subject} — ${w.topic} (${w.acc}%)`).join("; ") + ". Steer the student toward these when relevant.";
       }
-      // Current study plan: this week's planner sessions (AI-generated first), so
-      // the tutor can reference what the student should study next.
       const d = new Date();
       const dow = d.getUTCDay();
       const diff = dow === 0 ? -6 : 1 - dow;
@@ -208,10 +176,7 @@ router.post(
       monday.setUTCDate(d.getUTCDate() + diff);
       const weekOf = monday.toISOString().slice(0, 10);
       const dayOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-      const planSlots = await db
-        .select()
-        .from(plannerSlots)
-        .where(and(eq(plannerSlots.studentId, me.id), eq(plannerSlots.weekOf, weekOf)));
+      const planSlots = await db.select().from(plannerSlots).where(and(eq(plannerSlots.studentId, me.id), eq(plannerSlots.weekOf, weekOf)));
       if (planSlots.length > 0) {
         const sorted = planSlots
           .slice()
@@ -222,15 +187,7 @@ router.post(
             return di !== 0 ? di : a.time.localeCompare(b.time);
           })
           .slice(0, 6);
-        planLine =
-          "The student's current study plan for this week includes: " +
-          sorted
-            .map(
-              (s) =>
-                `${s.day} ${s.time} ${s.subject}${s.topic ? ` — ${s.topic}` : ""} (${s.durationMinutes}m)`,
-            )
-            .join("; ") +
-          ". Reference this plan and help them with the next sessions when relevant.";
+        planLine = "The student's current study plan includes: " + sorted.map((s) => `${s.day} ${s.time} ${s.subject}${s.topic ? ` — ${s.topic}` : ""} (${s.durationMinutes}m)`).join("; ") + ".";
       }
     }
 
@@ -250,69 +207,46 @@ router.post(
 
     const systemPrompt = studentContext ? `${ZIM_TUTOR_SYSTEM}\n\nContext: ${studentContext}` : ZIM_TUTOR_SYSTEM;
 
-    // Construct messages array: previous turns as text, last turn may include attachment
-    type AnthroMsg = Parameters<typeof anthropic.messages.stream>[0]["messages"][number];
-    const apiMessages: AnthroMsg[] = history.slice(0, -1).map((m) => ({
-      role: m.role === "assistant" ? ("assistant" as const) : ("user" as const),
-      content: m.content,
+    // Build Gemini history (all turns except the very last one we just inserted)
+    const geminiHistory: GeminiMessage[] = history.slice(0, -1).map((m) => ({
+      role: m.role === "assistant" ? ("model" as const) : ("user" as const),
+      parts: [{ text: m.content }],
     }));
 
+    // Last user parts — may include inline file
+    const lastParts: Part[] = [];
     if (file) {
-      const base64 = file.buffer.toString("base64");
-      const isImage = ALLOWED_IMAGE_TYPES.has(file.mimetype);
-      const block = isImage
-        ? {
-            type: "image" as const,
-            source: { type: "base64" as const, media_type: file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif", data: base64 },
-          }
-        : {
-            type: "document" as const,
-            source: { type: "base64" as const, media_type: "application/pdf" as const, data: base64 },
-          };
-      apiMessages.push({
-        role: "user",
-        content: [block, { type: "text", text: content }],
+      lastParts.push({
+        inlineData: {
+          mimeType: file.mimetype as string,
+          data: file.buffer.toString("base64"),
+        },
       });
-    } else {
-      apiMessages.push({ role: "user", content });
     }
+    lastParts.push({ text: content });
 
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders?.();
 
-    let fullResponse = "";
-
     try {
-      const stream = anthropic.messages.stream({
-        model: "claude-sonnet-4-6",
-        max_tokens: 8192,
-        system: systemPrompt,
-        messages: apiMessages,
-      });
-
-      for await (const event of stream) {
-        if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-          fullResponse += event.delta.text;
-          res.write(`data: ${JSON.stringify({ content: event.delta.text })}\n\n`);
-        }
-      }
+      const fullResponse = await streamChat(
+        { system: systemPrompt, history: geminiHistory, lastParts, maxTokens: 8192 },
+        (chunk) => res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`),
+      );
 
       await db.insert(messages).values({ conversationId: id, role: "assistant", content: encryptMessage(fullResponse) });
       res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
       res.end();
 
-      // Auto-title conversation from first message
+      // Auto-title from first exchange
       if (history.length <= 1 && c.title === "New conversation") {
         const title = content.slice(0, 60).replace(/\s+/g, " ");
         await db.update(conversations).set({ title }).where(eq(conversations.id, id));
       }
     } catch (err) {
-      req.log.error({ err }, "Anthropic stream error");
-      if (fullResponse) {
-        await db.insert(messages).values({ conversationId: id, role: "assistant", content: encryptMessage(fullResponse) });
-      }
+      req.log.error({ err }, "Gemini stream error");
       res.write(`data: ${JSON.stringify({ error: "Stream failed" })}\n\n`);
       res.end();
     }

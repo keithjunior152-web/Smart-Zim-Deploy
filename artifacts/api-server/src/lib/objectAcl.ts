@@ -57,7 +57,7 @@ export async function setObjectAclPolicy(
   objectRef: { bucket: string; path: string },
   aclPolicy: ObjectAclPolicy,
 ): Promise<void> {
-  const { error } = await supabaseAdmin.storage
+  const { error } = await supabaseAdmin().storage
     .from(objectRef.bucket)
     .update(objectRef.path, new Uint8Array(0), {
       metadata: {
@@ -72,7 +72,7 @@ export async function setObjectAclPolicy(
 export async function getObjectAclPolicy(
   objectRef: { bucket: string; path: string },
 ): Promise<ObjectAclPolicy | null> {
-  const { data, error } = await supabaseAdmin
+  const { data, error } = await supabaseAdmin()
     .from("_storage_objects_metadata")
     .select("metadata")
     .eq("bucket_id", objectRef.bucket)

@@ -17,7 +17,7 @@ Zimbabwe's ZIMSEC & Cambridge exam prep platform — AI tutor, past papers, stud
 - Frontend: React 19 + Vite 7 SPA, Tailwind CSS v4, TanStack Query, Wouter (routing), vite-plugin-pwa (PWA)
 - API: Express 5, session auth (connect-pg-simple + bcryptjs)
 - DB: PostgreSQL + Drizzle ORM (23 tables)
-- AI: Anthropic Claude (lazy-initialized via `ANTHROPIC_API_KEY`)
+- AI: Google Gemini 2.5 Flash (lazy-initialized via `GEMINI_API_KEY`)
 - Storage: Supabase Storage (lazy-initialized, replaces Replit Object Storage)
 - Validation: Zod v4, drizzle-zod
 - Build: esbuild (CJS → ESM bundle for API)
@@ -28,7 +28,7 @@ Zimbabwe's ZIMSEC & Cambridge exam prep platform — AI tutor, past papers, stud
 |-----|---------|
 | `DATABASE_URL` | Postgres connection string (Replit Postgres for dev) |
 | `SESSION_SECRET` | Express session secret |
-| `ANTHROPIC_API_KEY` | Anthropic API key (only needed when using AI Tutor) |
+| `GEMINI_API_KEY` | Google Gemini API key (ZimTutor chat, quiz, study plan, summariser) |
 | `SUPABASE_URL` | Supabase project URL (only needed for file uploads) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (only needed for file uploads) |
 | `SUPABASE_PUBLIC_BUCKET` | Public storage bucket name (default: `smartzim-public`) |
@@ -72,7 +72,7 @@ SmartZim serves three user roles:
 
 See `MIGRATION.md` for the full step-by-step guide. Summary:
 1. Create Supabase project → run `supabase/migrations/` SQL → create 2 storage buckets
-2. Get Anthropic API key
+2. Get Google Gemini API key (free at https://aistudio.google.com/app/apikey)
 3. Import repo to Vercel → add env vars → deploy
 
 ## User preferences

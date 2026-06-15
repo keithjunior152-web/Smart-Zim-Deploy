@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq, sql } from "drizzle-orm";
 import { db, plannerSlots, topicAttempts, examDates, syllabusTopics, type User } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { generateText } from "@workspace/integrations-anthropic-ai";
 import { requireRole } from "../lib/auth";
 
 const router: IRouter = Router();
@@ -10,7 +10,7 @@ const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 
 function mondayOf(d: Date): string {
   const date = new Date(d);
-  const day = date.getDay(); // 0=Sun..6=Sat
+  const day = date.getDay();
   const diff = (day === 0 ? -6 : 1) - day;
   date.setDate(date.getDate() + diff);
   return date.toISOString().slice(0, 10);
@@ -39,7 +39,6 @@ router.post("/ai/study-plan", requireRole("student"), async (req, res): Promise<
   const weekOf = req.body?.weekOf ? String(req.body.weekOf) : mondayOf(new Date());
   const curriculum = me.curriculum ?? "ZIMSEC";
 
-  // Gather context: subjects, exam dates, weak topics, syllabus topics.
   const userSubjects = Array.isArray(me.subjects) ? (me.subjects as string[]) : [];
   const exams = await db.select().from(examDates).where(eq(examDates.studentId, me.id));
   const aggregates = await db
@@ -114,12 +113,7 @@ Return ONLY a valid JSON object, no markdown:
 
   let parsed: { summary?: string; slots?: PlanSlot[] };
   try {
-    const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-6",
-      max_tokens: 3000,
-      messages: [{ role: "user", content: prompt }],
-    });
-    const text = response.content.find((b) => b.type === "text")?.text ?? "{}";
+    const text = await generateText(prompt, { maxTokens: 3000 });
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       res.status(502).json({ error: "Could not generate a plan. Please try again." });
@@ -148,7 +142,6 @@ Return ONLY a valid JSON object, no markdown:
     return;
   }
 
-  // Replace any previously AI-generated slots for this week, keep manual ones.
   await db
     .delete(plannerSlots)
     .where(and(eq(plannerSlots.studentId, me.id), eq(plannerSlots.weekOf, weekOf), eq(plannerSlots.source, "ai")));

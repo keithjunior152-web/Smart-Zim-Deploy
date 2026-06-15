@@ -2,8 +2,9 @@ import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import multer from "multer";
 import { db, quizSessions, topicAttempts, type QuizQuestion, type User } from "@workspace/db";
-import { anthropic } from "@workspace/integrations-anthropic-ai";
+import { generateText, generateWithParts } from "@workspace/integrations-anthropic-ai";
 import { requireAuth, requireRole } from "../lib/auth";
+import type { Part } from "@google/generative-ai";
 
 const router: IRouter = Router();
 
@@ -21,12 +22,6 @@ router.post("/ai/summarise", requireAuth(), upload.single("file"), async (req, r
   const isImage = ALLOWED_IMAGE_TYPES.has(file.mimetype);
   const isPdf = file.mimetype === "application/pdf";
   if (!isImage && !isPdf) { res.status(400).json({ error: "Only images (JPEG/PNG/WebP) and PDFs are supported" }); return; }
-
-  const base64 = file.buffer.toString("base64");
-
-  const contentBlock = isImage
-    ? { type: "image" as const, source: { type: "base64" as const, media_type: file.mimetype as "image/jpeg" | "image/png" | "image/webp" | "image/gif", data: base64 } }
-    : { type: "document" as const, source: { type: "base64" as const, media_type: "application/pdf" as const, data: base64 } };
 
   const prompt = `You are an expert ZIMSEC/Cambridge study assistant. Analyse the uploaded study material carefully and produce a structured summary for a Zimbabwean student.
 
@@ -46,17 +41,20 @@ Rules:
 - likelyExamQuestions: up to 5 ZIMSEC-style exam questions likely based on this material
 - Return ONLY the JSON object, no markdown, no other text`;
 
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 2500,
-    messages: [{ role: "user", content: [contentBlock, { type: "text", text: prompt }] }],
-  });
+  const parts: Part[] = [
+    { inlineData: { mimeType: file.mimetype as string, data: file.buffer.toString("base64") } },
+    { text: prompt },
+  ];
 
-  const text = response.content.find((b) => b.type === "text")?.text ?? "{}";
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) { res.status(500).json({ error: "AI could not parse the document" }); return; }
-  const data = JSON.parse(jsonMatch[0]);
-  res.json(data);
+  try {
+    const text = await generateWithParts(parts, { maxTokens: 2500 });
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) { res.status(500).json({ error: "AI could not parse the document" }); return; }
+    res.json(JSON.parse(jsonMatch[0]));
+  } catch (err) {
+    req.log.error({ err }, "Summarise failed");
+    res.status(502).json({ error: "AI summarisation failed. Please try again." });
+  }
 });
 
 router.get("/quiz/today", requireRole("student", "teacher"), async (req, res): Promise<void> => {
@@ -91,22 +89,21 @@ Each question MUST include "subject" (the academic subject) and "topic" (the spe
 Ensure questions are appropriate for ${grade} level, varied in subject, and cover ZIMSEC curriculum topics.
 Return ONLY the JSON array.`;
 
-  const response = await anthropic.messages.create({
-    model: "claude-sonnet-4-6",
-    max_tokens: 2500,
-    messages: [{ role: "user", content: prompt }],
-  });
+  try {
+    const text = await generateText(prompt, { maxTokens: 2500 });
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    const questions: QuizQuestion[] = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
 
-  const text = response.content.find((b) => b.type === "text")?.text ?? "[]";
-  const jsonMatch = text.match(/\[[\s\S]*\]/);
-  const questions: QuizQuestion[] = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+    const [session] = await db
+      .insert(quizSessions)
+      .values({ userId: me.id, date: today, grade: me.grade, questions })
+      .returning();
 
-  const [session] = await db
-    .insert(quizSessions)
-    .values({ userId: me.id, date: today, grade: me.grade, questions })
-    .returning();
-
-  res.json(session);
+    res.json(session);
+  } catch (err) {
+    req.log.error({ err }, "Quiz generation failed");
+    res.status(502).json({ error: "Could not generate today's quiz. Please try again." });
+  }
 });
 
 router.post("/quiz/submit", requireRole("student", "teacher"), async (req, res): Promise<void> => {
@@ -135,7 +132,7 @@ router.post("/quiz/submit", requireRole("student", "teacher"), async (req, res):
     .where(eq(quizSessions.id, session.id))
     .returning();
 
-  // Capture per-topic performance for weak-topic analysis.
+  // Track per-topic performance for weak-topic analysis
   const byTopic = new Map<string, { subject: string; topic: string; correct: number; total: number }>();
   for (const q of questions) {
     if (!q.subject || !q.topic) continue;
@@ -164,11 +161,7 @@ router.post("/quiz/submit", requireRole("student", "teacher"), async (req, res):
 
 router.get("/quiz/history", requireAuth(), async (req, res): Promise<void> => {
   const me = (req as unknown as { user: User }).user;
-  const rows = await db
-    .select()
-    .from(quizSessions)
-    .where(eq(quizSessions.userId, me.id))
-    .limit(30);
+  const rows = await db.select().from(quizSessions).where(eq(quizSessions.userId, me.id)).limit(30);
   res.json(rows);
 });
 
