@@ -30,18 +30,47 @@ app.use(
   }),
 );
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
+// Build the allowed-origins list from env vars.
+// ALLOWED_ORIGINS   — explicit comma-separated list (production / CI)
+// REPLIT_DOMAINS    — Replit-injected preview domains (dev on Replit)
+// REPLIT_DEV_DOMAIN — Replit dev tunnel domain
+// Fallback          — localhost ports used by Vite dev servers
+const _explicit = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
-  : ["http://localhost:3000", "http://localhost:4173"];
+  : [];
+
+const _replitDomains = [
+  ...(process.env.REPLIT_DOMAINS ?? "")
+    .split(",")
+    .map((d) => d.trim())
+    .filter(Boolean)
+    .map((d) => `https://${d}`),
+  ...(process.env.REPLIT_DEV_DOMAIN
+    ? [`https://${process.env.REPLIT_DEV_DOMAIN}`]
+    : []),
+];
+
+const _devFallback =
+  _explicit.length === 0 && _replitDomains.length === 0
+    ? ["http://localhost:3000", "http://localhost:4173", "http://localhost:22156"]
+    : [];
+
+const allowedOrigins = [...new Set([..._explicit, ..._replitDomains, ..._devFallback])];
 
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS blocked: ${origin}`));
+      // No origin = same-origin or server-to-server, always allow
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      // In dev, also allow any *.replit.dev or *.repl.co subdomain
+      if (
+        process.env.NODE_ENV !== "production" &&
+        (/\.replit\.dev$/.test(origin) || /\.repl\.co$/.test(origin) || /\.worf\.replit\.dev$/.test(origin))
+      ) {
+        return callback(null, true);
       }
+      callback(new Error(`CORS blocked: ${origin}`));
     },
     credentials: true,
   }),

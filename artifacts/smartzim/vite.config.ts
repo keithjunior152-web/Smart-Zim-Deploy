@@ -344,7 +344,10 @@ export default defineConfig({
     smartzimSeoPlugin(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "apple-touch-icon.png"],
+      strategies: "injectManifest",
+      srcDir: "src",
+      filename: "sw.ts",
+      includeAssets: ["favicon.svg", "apple-touch-icon.png", "offline.html"],
       manifest: {
         name: "SmartZim Learning",
         short_name: "SmartZim",
@@ -370,25 +373,9 @@ export default defineConfig({
           },
         ],
       },
-      workbox: {
-        navigateFallback: `${basePath.replace(/\/$/, "")}/index.html`,
-        navigateFallbackDenylist: [/^\/api/, /\/api\//],
+      injectManifest: {
         globPatterns: ["**/*.{js,css,html,svg,png,woff,woff2}"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024,
-        cleanupOutdatedCaches: true,
-        runtimeCaching: [
-          {
-            urlPattern: ({ url }) =>
-              url.origin === "https://fonts.googleapis.com" ||
-              url.origin === "https://fonts.gstatic.com",
-            handler: "CacheFirst",
-            options: {
-              cacheName: "smartzim-fonts",
-              expiration: { maxEntries: 30, maxAgeSeconds: 60 * 60 * 24 * 365 },
-              cacheableResponse: { statuses: [0, 200] },
-            },
-          },
-        ],
       },
       devOptions: {
         enabled: false,
