@@ -68,10 +68,13 @@ From **Project Settings** → **Database** → **Connection string (URI)**:
 
 ---
 
-## Step 2 — Get an Anthropic API key
+## Step 2 — Get a Google Gemini API key
 
-1. Go to [console.anthropic.com](https://console.anthropic.com/account/keys)
-2. Create a new key → copy it as `ANTHROPIC_API_KEY`
+1. Go to [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
+2. Click **Create API key** → pick any Google Cloud project (or create one)
+3. Copy the key (starts with `AIza…`) — this is your `GEMINI_API_KEY`
+
+> **Free tier**: Gemini 2.5 Flash has a generous free quota — no billing required to start.
 
 ---
 
@@ -99,7 +102,7 @@ SUPABASE_URL          https://[project-ref].supabase.co
 SUPABASE_SERVICE_ROLE_KEY  eyJ...
 SUPABASE_PUBLIC_BUCKET     smartzim-public
 SUPABASE_PRIVATE_BUCKET    smartzim-private
-ANTHROPIC_API_KEY     sk-ant-...
+GEMINI_API_KEY        AIza...
 ALLOWED_ORIGINS       https://smartzim.vercel.app,https://smartzim.co.zw
 SITE_ORIGIN           https://smartzim.vercel.app
 NODE_ENV              production
