@@ -9,6 +9,7 @@ import {
   type User,
 } from "@workspace/db";
 import { requireAuth, requireSuperAdmin, serializeUser } from "../lib/auth";
+import { sendApprovalEmail, sendRejectionEmail, sendSubscriptionEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -84,6 +85,9 @@ router.post("/users/:id/approve", requireSuperAdmin(), async (req, res): Promise
     message: "Your account has been approved. Your 7-day trial starts now.",
     link: "/app",
   });
+  sendApprovalEmail(u.email, u.name).catch((err) =>
+    req.log.warn({ err, userId: u.id }, "approval email failed")
+  );
   res.json(serializeUser(u));
 });
 
@@ -105,6 +109,9 @@ router.post("/users/:id/reject", requireSuperAdmin(), async (req, res): Promise<
     title: "Registration not approved",
     message: reason,
   });
+  sendRejectionEmail(u.email, u.name, reason).catch((err) =>
+    req.log.warn({ err, userId: u.id }, "rejection email failed")
+  );
   res.json(serializeUser(u));
 });
 
@@ -137,6 +144,9 @@ router.post("/users/:id/grant-subscription", requireSuperAdmin(), async (req, re
     message: `Your ${plan} plan is active until ${expiry.toDateString()}.`,
     link: "/app/subscription",
   });
+  sendSubscriptionEmail(u.email, u.name, plan, expiry).catch((err) =>
+    req.log.warn({ err, userId: u.id }, "subscription email failed")
+  );
   res.json(serializeUser(u));
 });
 

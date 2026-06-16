@@ -106,6 +106,23 @@ GEMINI_API_KEY        AIza...
 ALLOWED_ORIGINS       https://smartzim.vercel.app,https://smartzim.co.zw
 SITE_ORIGIN           https://smartzim.vercel.app
 NODE_ENV              production
+
+# ── Email (optional but recommended) ──
+# If not set, approve/reject still works — users just won't receive emails.
+# Option A: Gmail (easiest to start)
+SMTP_HOST             smtp.gmail.com
+SMTP_PORT             587
+SMTP_USER             you@gmail.com
+SMTP_PASS             xxxx-xxxx-xxxx-xxxx   # 16-char App Password (not your Gmail password)
+SMTP_FROM             SmartZim <noreply@smartzim.co.zw>
+
+# Option B: Resend (recommended for production — free tier, easy setup)
+# Sign up at resend.com → Domains → verify your domain → API Keys
+SMTP_HOST             smtp.resend.com
+SMTP_PORT             465
+SMTP_USER             resend
+SMTP_PASS             re_...   # your Resend API key
+SMTP_FROM             SmartZim <noreply@yourdomain.com>
 ```
 
 ### Build & deploy
