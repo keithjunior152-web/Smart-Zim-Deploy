@@ -4,6 +4,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import pinoHttp from "pino-http";
 import router from "./routes";
+import paymentsRouter, { stripeWebhookHandler } from "./routes/payments";
 import { logger } from "./lib/logger";
 
 const app: Express = express();
@@ -76,6 +77,14 @@ app.use(
   }),
 );
 
+// Stripe webhook MUST come before express.json() so it receives the raw body
+// for signature verification.
+app.post(
+  "/api/payments/stripe/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhookHandler,
+);
+
 app.use(express.json({ limit: "2mb" }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -107,6 +116,7 @@ app.use(
   }),
 );
 
+app.use("/api", paymentsRouter);
 app.use("/api", router);
 
 export default app;

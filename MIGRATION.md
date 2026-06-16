@@ -141,7 +141,61 @@ vercel --prod
 
 ---
 
-## Step 4 — Verify the deployment
+## Step 4 — Set up Stripe payments (optional but recommended)
+
+Stripe gives you automatic subscription activation — no admin approval needed.
+
+### Get your Stripe keys
+1. Sign up at [stripe.com](https://stripe.com)
+2. Go to **Developers → API keys** → copy **Secret key** and **Publishable key**
+3. Test keys start with `sk_test_` / `pk_test_` — use these first before going live
+
+### Add to Vercel environment variables
+```
+STRIPE_SECRET_KEY       sk_test_...   (or sk_live_... for production)
+STRIPE_WEBHOOK_SECRET   whsec_...     (get this in step below)
+VITE_STRIPE_PUBLISHABLE_KEY   pk_test_...
+```
+
+### Set up the Stripe webhook
+In the [Stripe Dashboard](https://dashboard.stripe.com/webhooks) → **Add endpoint**:
+- **URL**: `https://smartzim.vercel.app/api/payments/stripe/webhook`
+- **Events to listen for**: `checkout.session.completed`
+- Copy the **Signing secret** → paste as `STRIPE_WEBHOOK_SECRET`
+
+### Test locally with Stripe CLI
+```bash
+# Install: https://stripe.com/docs/stripe-cli
+stripe login
+stripe listen --forward-to localhost:8080/api/payments/stripe/webhook
+# Copy the "whsec_..." secret printed and set it as STRIPE_WEBHOOK_SECRET locally
+```
+
+---
+
+## Step 5 — Set up PayPal payments (optional)
+
+PayPal also gives automatic activation on payment.
+
+### Get your PayPal credentials
+1. Go to [developer.paypal.com](https://developer.paypal.com) → **Apps & Credentials**
+2. Click **Create App** → name it "SmartZim" → type: **Merchant**
+3. Copy **Client ID** and **Secret**
+4. Use **Sandbox** credentials for testing, **Live** credentials for production
+
+### Add to Vercel environment variables
+```
+PAYPAL_CLIENT_ID        AX...
+PAYPAL_CLIENT_SECRET    EG...
+PAYPAL_ENV              production   (or "sandbox" for testing)
+VITE_PAYPAL_CLIENT_ID   AX...        (same as PAYPAL_CLIENT_ID — safe to expose)
+```
+
+> PayPal does not require webhook setup — the frontend captures the payment synchronously.
+
+---
+
+## Step 6 — Verify the deployment
 
 ```bash
 # Health check
