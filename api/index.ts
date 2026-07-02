@@ -1,7 +1,6 @@
 /// <reference path="./global.d.ts" />
-import type { IncomingMessage, ServerResponse } from "http";
 
-type RequestHandler = (req: IncomingMessage, res: ServerResponse) => void;
+type RequestHandler = (req: unknown, res: unknown) => void;
 
 let appPromise: Promise<RequestHandler> | null = null;
 
@@ -14,7 +13,7 @@ async function getApp(): Promise<RequestHandler> {
   return appPromise;
 }
 
-export default async function handler(req: IncomingMessage, res: ServerResponse) {
+export default async function handler(req: unknown, res: unknown) {
   const app = await getApp();
   app(req, res);
 }
