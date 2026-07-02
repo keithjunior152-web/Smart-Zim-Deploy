@@ -7,7 +7,13 @@ interface MetaTagsProps {
   noindex?: boolean;
 }
 
-const CANONICAL_BASE = "https://smartzim.replit.app";
+// Single source of truth for the canonical host: injected from the same
+// SITE_ORIGIN env var used by the build-time prerender config in vite.config.ts,
+// so the client-mutated head always agrees with the static HTML shell and
+// prerendered pages.
+const CANONICAL_BASE: string =
+  (import.meta.env.VITE_SITE_ORIGIN as string | undefined) ??
+  "https://smartzim.vercel.app";
 
 function getMeta(selector: string): HTMLMetaElement | null {
   return document.querySelector(selector) as HTMLMetaElement | null;

@@ -36,6 +36,58 @@ const ROUTE_META: Record<string, RouteMeta> = {
       "Prepare for ZIMSEC and Cambridge exams with SmartZim. Access thousands of past papers, AI-powered tutoring (ZimTutor), mock exams, and structured study planners. Join students across Zimbabwe today.",
     canonical: `${SITE_ORIGIN}/`,
     robots: "index, follow",
+    jsonLd: JSON.stringify({
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": ORG_ID,
+          name: SITE_NAME,
+          url: `${SITE_ORIGIN}/`,
+          logo: {
+            "@type": "ImageObject",
+            url: `${SITE_ORIGIN}/opengraph.jpg`,
+          },
+          description:
+            "SmartZim is an educational platform helping Zimbabwean students prepare for ZIMSEC and Cambridge examinations.",
+          foundingDate: "2025",
+          founder: { "@type": "Person", name: "Keith Kungwara" },
+          areaServed: { "@type": "Country", name: "Zimbabwe" },
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": `${SITE_ORIGIN}/#app`,
+          name: SITE_NAME,
+          url: `${SITE_ORIGIN}/`,
+          applicationCategory: "EducationalApplication",
+          operatingSystem: "Web, iOS, Android",
+          description:
+            "ZIMSEC and Cambridge exam prep app with past papers, AI-powered tutoring (ZimTutor), mock exams, assignments, and study planning for Zimbabwean students.",
+          screenshot: `${SITE_ORIGIN}/opengraph.jpg`,
+          author: { "@id": ORG_ID },
+          offers: {
+            "@type": "Offer",
+            price: "2.00",
+            priceCurrency: "USD",
+            billingIncrement: "P1M",
+            description:
+              "Monthly subscription plus a one-time $4 registration fee. 7-day free trial available.",
+          },
+          audience: {
+            "@type": "EducationalAudience",
+            educationalRole: "student",
+            geographicArea: { "@type": "Country", name: "Zimbabwe" },
+          },
+        },
+        {
+          "@type": "WebSite",
+          "@id": WEBSITE_ID,
+          url: `${SITE_ORIGIN}/`,
+          name: SITE_NAME,
+          publisher: { "@id": ORG_ID },
+        },
+      ],
+    }),
   },
   "/privacy": {
     title: "Privacy Policy — SmartZim",
@@ -184,6 +236,14 @@ function replaceHead(html: string, meta: RouteMeta): string {
     /<meta name="twitter:description"[^>]*\/>/,
     `<meta name="twitter:description" content="${desc}" />`,
   );
+  result = result.replace(
+    /<meta property="og:image"[^>]*\/>/,
+    `<meta property="og:image" content="${SITE_ORIGIN}/opengraph.jpg" />`,
+  );
+  result = result.replace(
+    /<meta name="twitter:image"[^>]*\/>/,
+    `<meta name="twitter:image" content="${SITE_ORIGIN}/opengraph.jpg" />`,
+  );
   if (meta.jsonLd) {
     result = result.replace(
       /<script type="application\/ld\+json">[\s\S]*?<\/script>/,
@@ -232,7 +292,15 @@ function smartzimSeoPlugin(): Plugin {
 
       const serverOutDir = path.resolve(artifactDir, "dist/server");
 
-      const baseHtml = readFileSync(baseHtmlPath, "utf-8");
+      // Vite's transformIndexHtml hook does not reliably fire for the root
+      // HTML entry during a production build, so the checked-in index.html
+      // must be normalized to SITE_ORIGIN explicitly here before it is used
+      // as the shared template for every other generated page.
+      const rootMeta = ROUTE_META["/"];
+      const baseHtml = rootMeta
+        ? replaceHead(readFileSync(baseHtmlPath, "utf-8"), rootMeta)
+        : readFileSync(baseHtmlPath, "utf-8");
+      writeFileSync(baseHtmlPath, baseHtml);
       for (const [route, meta] of Object.entries(ROUTE_META)) {
         if (route === "/" || meta.ssrPrerender) continue;
         const routeSlug = route.replace(/^\//, "");
@@ -270,10 +338,9 @@ function smartzimSeoPlugin(): Plugin {
       );
 
       const landingHtml: string = serverEntry.render();
-      const landingTemplate = readFileSync(baseHtmlPath, "utf-8");
       writeFileSync(
         baseHtmlPath,
-        landingTemplate.replace(
+        baseHtml.replace(
           '<div id="root"></div>',
           `<div id="root">${landingHtml}</div>`,
         ),
@@ -332,12 +399,28 @@ function smartzimSeoPlugin(): Plugin {
         path.join(teachersDir, "index.html"),
         replaceHead(baseHtml, teachersMeta),
       );
+
+      // Normalize any other canonical host baked into static crawl files
+      // (robots.txt, sitemap.xml, llms.txt) to the same SITE_ORIGIN used above,
+      // so every crawl-facing surface points at one host regardless of what
+      // literal domain is checked into the public/ source files.
+      const HOST_PATTERN = /https:\/\/smartzim\.(replit|vercel)\.app/g;
+      for (const filename of ["robots.txt", "sitemap.xml", "llms.txt"]) {
+        const filePath = path.join(outDir, filename);
+        if (!existsSync(filePath)) continue;
+        const contents = readFileSync(filePath, "utf-8");
+        const normalized = contents.replace(HOST_PATTERN, SITE_ORIGIN);
+        if (normalized !== contents) writeFileSync(filePath, normalized);
+      }
     },
   };
 }
 
 export default defineConfig({
   base: basePath,
+  define: {
+    "import.meta.env.VITE_SITE_ORIGIN": JSON.stringify(SITE_ORIGIN),
+  },
   plugins: [
     react(),
     tailwindcss(),

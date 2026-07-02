@@ -11,13 +11,25 @@
       "runtime": "nodejs22.x"
     }
   },
+  "redirects": [
+    {
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "smartzim.replit.app" }],
+      "destination": "https://smartzim.vercel.app/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
       "destination": "/api/index"
     },
     {
-      "source": "/(.*)",
+      "source": "/app/:path*",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/teachers/:userId",
       "destination": "/index.html"
     }
   ],

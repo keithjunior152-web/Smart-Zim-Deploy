@@ -11,7 +11,7 @@ SmartZim is a Zimbabwe-focused learning and exam-prep platform for students, tea
 
 ## Sitemap
 
-https://smartzim.replit.app/sitemap.xml
+https://smartzim.vercel.app/sitemap.xml
 
 ## Utility pages (not for indexing)
 

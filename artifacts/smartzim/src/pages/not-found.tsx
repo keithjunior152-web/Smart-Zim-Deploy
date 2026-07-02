@@ -1,9 +1,15 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
+import { MetaTags } from "@/components/MetaTags";
 
 export default function NotFound() {
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-gray-50">
+      <MetaTags
+        title="Page Not Found — SmartZim"
+        description="The page you're looking for doesn't exist on SmartZim."
+        noindex
+      />
       <Card className="w-full max-w-md mx-4">
         <CardContent className="pt-6">
           <div className="flex mb-4 gap-2">

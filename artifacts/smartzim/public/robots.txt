@@ -7,4 +7,4 @@ Disallow: /rejected
 Disallow: /teachers/
 Disallow: /app/
 
-Sitemap: https://smartzim.replit.app/sitemap.xml
+Sitemap: https://smartzim.vercel.app/sitemap.xml
