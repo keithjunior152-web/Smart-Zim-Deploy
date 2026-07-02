@@ -192,6 +192,75 @@ function safeJsonLd(json: string): string {
   return json.replace(/<\//g, "<\\/");
 }
 
+type MinistryPost = {
+  id: number;
+  content: string;
+  imageUrl: string | null;
+  videoUrl: string | null;
+  hashtags: string | null;
+  isPinned: boolean;
+  createdAt: Date | string;
+};
+
+const MINISTRY_PUBLISHER = {
+  "@type": "GovernmentOrganization",
+  name: "Ministry of Primary and Secondary Education",
+  alternateName: "MoPSE",
+  url: "https://www.mopse.co.zw",
+};
+
+// Builds feed-aware structured data for the /ministry route so search
+// engines and AI crawlers can understand the page as a dated feed of
+// official announcements (freshness, order, publisher) instead of a
+// generic WebPage. Falls back to a plain CollectionPage when there is no
+// announcement content yet, so the JSON-LD always matches the visible HTML.
+function buildMinistryJsonLd(posts: MinistryPost[]): string {
+  const pageUrl = `${SITE_ORIGIN}/ministry`;
+  const itemListElement = posts.map((post, index) => {
+    const createdAt = new Date(post.createdAt).toISOString();
+    const headline =
+      post.content.length > 110 ? `${post.content.slice(0, 110)}…` : post.content;
+    return {
+      "@type": "ListItem",
+      position: index + 1,
+      url: `${pageUrl}#announcement-${post.id}`,
+      item: {
+        "@type": "NewsArticle",
+        "@id": `${pageUrl}#announcement-${post.id}`,
+        headline,
+        articleBody: post.content,
+        datePublished: createdAt,
+        dateModified: createdAt,
+        url: `${pageUrl}#announcement-${post.id}`,
+        image: post.imageUrl ?? undefined,
+        video: post.videoUrl ?? undefined,
+        isAccessibleForFree: true,
+        publisher: MINISTRY_PUBLISHER,
+        author: MINISTRY_PUBLISHER,
+      },
+    };
+  });
+
+  return JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "@id": pageUrl,
+    url: pageUrl,
+    name: `Ministry of Education Announcements — ${SITE_NAME}`,
+    description:
+      "Official announcements from Zimbabwe's Ministry of Primary and Secondary Education (MoPSE).",
+    isPartOf: { "@id": WEBSITE_ID },
+    publisher: { "@id": ORG_ID },
+    about: MINISTRY_PUBLISHER,
+    mainEntity: {
+      "@type": "ItemList",
+      itemListOrder: "https://schema.org/ItemListOrderDescending",
+      numberOfItems: posts.length,
+      itemListElement,
+    },
+  });
+}
+
 function replaceHead(html: string, meta: RouteMeta): string {
   let result = html;
   const title = escHtml(meta.title);
@@ -346,22 +415,38 @@ function smartzimSeoPlugin(): Plugin {
         ),
       );
 
-      type MinistryPost = Record<string, unknown>;
-      let ministryPosts: MinistryPost[] | undefined;
+      // The ministry announcements page is an indexed route, so its
+      // prerendered HTML must contain the real announcement content rather
+      // than falling back to a "no announcements yet" empty state. Query the
+      // database directly (the same source of truth the API route reads
+      // from) instead of making a best-effort HTTP call to a local API
+      // server that is not running during a static Vercel build. The query
+      // itself lives in entry-server.tsx's fetchMinistryPosts() so it runs
+      // inside the already-bundled SSR module graph, where Vite resolves
+      // extensionless workspace-package imports; calling it directly from
+      // this config file hits Node's native ESM loader, which cannot. If
+      // the database is unreachable or the query fails, fail the build
+      // outright so an empty-state HTML file is never published as the
+      // canonical indexed page for this route.
+      let ministryPosts: MinistryPost[];
       try {
-        const controller = new AbortController();
-        const tid = setTimeout(() => controller.abort(), 5000);
-        const apiRes = await fetch(
-          `${process.env.VITE_API_BASE_URL ?? "http://localhost:3001"}/api/social/ministry-announcements`,
-          { signal: controller.signal },
+        ministryPosts = await serverEntry.fetchMinistryPosts();
+      } catch (err) {
+        throw new Error(
+          `Failed to fetch ministry announcements from the database during build. ` +
+            `The /ministry route is a canonical indexed page and must not be published ` +
+            `with empty content. Original error: ${err instanceof Error ? err.message : String(err)}`,
         );
-        clearTimeout(tid);
-        if (apiRes.ok) {
-          ministryPosts = (await apiRes.json()) as MinistryPost[];
-        }
-      } catch {
-        // API not reachable during build; /ministry renders static shell.
       }
+
+      const ministryMeta: RouteMeta = {
+        ...ROUTE_META["/ministry"],
+        jsonLd: buildMinistryJsonLd(ministryPosts),
+      };
+      const routeMetaForPrerender: Record<string, RouteMeta> = {
+        ...ROUTE_META,
+        "/ministry": ministryMeta,
+      };
 
       const ssrRouteMap: Record<string, () => string> = {
         "/privacy": () => serverEntry.renderPrivacy(),
@@ -369,7 +454,7 @@ function smartzimSeoPlugin(): Plugin {
         "/ministry": () => serverEntry.renderMinistry(ministryPosts),
       };
 
-      for (const [route, meta] of Object.entries(ROUTE_META)) {
+      for (const [route, meta] of Object.entries(routeMetaForPrerender)) {
         if (!meta.ssrPrerender) continue;
         const renderFn = ssrRouteMap[route];
         if (!renderFn) continue;

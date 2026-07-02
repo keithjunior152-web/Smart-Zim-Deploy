@@ -5,6 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Megaphone, Globe, AlertCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
+import { Link } from "wouter";
 import { MetaTags } from "@/components/MetaTags";
 
 export default function MinistryAnnouncements() {
@@ -92,6 +93,17 @@ export default function MinistryAnnouncements() {
           ))}
         </div>
       )}
+
+      <footer className="pt-6 border-t text-center text-sm text-muted-foreground space-y-2">
+        <div className="flex items-center justify-center gap-4 flex-wrap">
+          <Link href="/"><span className="hover:text-primary underline">Home</span></Link>
+          <span aria-hidden>·</span>
+          <Link href="/privacy"><span className="hover:text-primary underline">Privacy Policy</span></Link>
+          <span aria-hidden>·</span>
+          <Link href="/terms"><span className="hover:text-primary underline">Terms of Service</span></Link>
+        </div>
+        <div className="text-xs">SmartZim — Powered by Keith Kungwara · © 2025</div>
+      </footer>
     </div>
   );
 }

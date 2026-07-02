@@ -22,6 +22,9 @@ export default function Landing() {
           SmartZim
         </div>
         <div className="flex items-center gap-4">
+          <Link href="/ministry">
+            <span className="hidden sm:inline text-sm text-muted-foreground hover:text-primary underline-offset-4 hover:underline">Ministry Announcements</span>
+          </Link>
           <Link href="/login">
             <Button variant="ghost" className="hidden sm:inline-flex">Sign In</Button>
           </Link>
@@ -115,7 +118,9 @@ export default function Landing() {
       </main>
 
       <footer className="px-6 py-8 border-t bg-card text-center text-muted-foreground text-sm space-y-3">
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-4 flex-wrap">
+          <Link href="/ministry"><span className="hover:text-primary underline">Ministry Announcements</span></Link>
+          <span aria-hidden>·</span>
           <Link href="/privacy"><span className="hover:text-primary underline">Privacy Policy</span></Link>
           <span aria-hidden>·</span>
           <Link href="/terms"><span className="hover:text-primary underline">Terms of Service</span></Link>
