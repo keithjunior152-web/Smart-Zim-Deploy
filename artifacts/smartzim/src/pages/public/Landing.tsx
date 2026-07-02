@@ -38,7 +38,7 @@ export default function Landing() {
             animate={{ opacity: 1, y: 0 }}
             className="text-5xl md:text-7xl font-bold tracking-tight text-foreground mb-6"
           >
-            Your Ultimate <span className="text-primary">Study Companion</span>
+            ZIMSEC &amp; Cambridge <span className="text-primary">Exam Prep for Zimbabwean Students</span>
           </motion.h1>
           <motion.p 
             initial={{ opacity: 0, y: 20 }}

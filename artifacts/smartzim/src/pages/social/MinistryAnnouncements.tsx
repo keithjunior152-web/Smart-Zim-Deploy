@@ -23,7 +23,7 @@ export default function MinistryAnnouncements() {
           <Globe className="h-7 w-7 text-primary" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold">Ministry of Education</h1>
+          <h1 className="text-2xl font-bold">Official Ministry of Education Announcements in Zimbabwe</h1>
           <p className="text-muted-foreground text-sm mt-0.5">Official announcements from the Ministry of Primary and Secondary Education — Zimbabwe</p>
         </div>
       </div>
