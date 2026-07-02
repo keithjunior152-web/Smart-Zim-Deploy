@@ -5,9 +5,11 @@
  * SmartZim Learning Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { GeminiMessage } from "./geminiMessage";
 
-export interface AnthropicConversation {
+export interface GeminiConversationWithMessages {
   id: number;
   title: string;
   createdAt: Date;
+  messages: GeminiMessage[];
 }

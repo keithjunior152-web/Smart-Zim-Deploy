@@ -16,7 +16,7 @@ This guide walks through every step required to take SmartZim from Replit to pro
 | `artifacts/api-server/src/lib/objectStorage.ts` | **Completely rewritten** — Replit GCS sidecar replaced with Supabase Storage SDK |
 | `artifacts/api-server/src/lib/objectAcl.ts` | Updated to use Supabase storage refs instead of GCS File objects |
 | `artifacts/api-server/package.json` | Removed `@google-cloud/storage`, `google-auth-library`; added `@supabase/supabase-js` |
-| `lib/integrations-anthropic-ai/src/client.ts` | Removed Replit AI proxy; uses `ANTHROPIC_API_KEY` directly |
+| `lib/integrations-gemini-ai/src/client.ts` | Removed Replit AI proxy; uses `GEMINI_API_KEY` directly |
 | `pnpm-workspace.yaml` | Removed all `@replit/*` catalog entries and `minimumReleaseAgeExclude` for Replit packages |
 | `vercel.json` | New — configures Vercel deployment for monorepo |
 | `api/index.ts` | New — Vercel serverless function entry wrapping the Express app |
@@ -259,7 +259,7 @@ PORT=3000 BASE_PATH=/ pnpm --filter @workspace/smartzim run dev
                     │  • Session auth (postgres store)  │
                     │  • Drizzle ORM                    │
                     │  • Supabase Storage SDK           │
-                    │  • Anthropic SDK (direct)         │
+                    │  • Google Gemini SDK (direct)     │
                     └──────────────┬──────────────────┘
                                    │
                     ┌──────────────▼──────────────────┐
@@ -285,8 +285,8 @@ PORT=3000 BASE_PATH=/ pnpm --filter @workspace/smartzim run dev
 - Supabase free tier has a 50MB file size limit; the API allows up to 150MB — consider a paid plan for large uploads
 
 ### AI tutor not responding
-- Verify `ANTHROPIC_API_KEY` is set in Vercel environment variables
-- Check Anthropic usage limits on your account
+- Verify `GEMINI_API_KEY` is set in Vercel environment variables
+- Check Google Gemini usage limits on your account (free tier at https://aistudio.google.com/app/apikey)
 
 ### Build failing on Vercel
 - Ensure `pnpm` is detected (Vercel auto-detects `pnpm-workspace.yaml`)

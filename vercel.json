@@ -5,7 +5,7 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "framework": null,
   "functions": {
-    "api/index.js": {
+    "api/index.ts": {
       "memory": 1024,
       "maxDuration": 30,
       "runtime": "nodejs22.x"
@@ -14,7 +14,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "/api/index.js"
+      "destination": "/api/index"
     },
     {
       "source": "/(.*)",

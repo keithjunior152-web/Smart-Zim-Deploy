@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, asc, desc, eq, sql } from "drizzle-orm";
 import multer from "multer";
 import { db, conversations, messages, examDates, topicAttempts, plannerSlots, type User } from "@workspace/db";
-import { streamChat, type GeminiMessage } from "@workspace/integrations-anthropic-ai";
+import { streamChat, type GeminiMessage } from "@workspace/integrations-gemini-ai";
 import { requireAuth } from "../lib/auth";
 import { encryptMessage, decryptMessage } from "../lib/crypto";
 import type { Part } from "@google/generative-ai";
@@ -38,7 +38,7 @@ async function ensureOwned(userId: number, conversationId: number) {
   return c ?? null;
 }
 
-router.get("/anthropic/conversations", requireAuth(), async (req, res): Promise<void> => {
+router.get("/gemini/conversations", requireAuth(), async (req, res): Promise<void> => {
   const me = (req as unknown as { user: User }).user;
   const rows = await db
     .select()
@@ -49,14 +49,14 @@ router.get("/anthropic/conversations", requireAuth(), async (req, res): Promise<
   res.json(rows.map((c) => ({ id: c.id, title: c.title, createdAt: c.createdAt.toISOString() })));
 });
 
-router.post("/anthropic/conversations", requireAuth(), async (req, res): Promise<void> => {
+router.post("/gemini/conversations", requireAuth(), async (req, res): Promise<void> => {
   const me = (req as unknown as { user: User }).user;
   const title = String(req.body?.title ?? "New conversation").slice(0, 200);
   const [c] = await db.insert(conversations).values({ title, userId: me.id }).returning();
   res.status(201).json({ id: c.id, title: c.title, createdAt: c.createdAt.toISOString() });
 });
 
-router.get("/anthropic/conversations/:id", requireAuth(), async (req, res): Promise<void> => {
+router.get("/gemini/conversations/:id", requireAuth(), async (req, res): Promise<void> => {
   const me = (req as unknown as { user: User }).user;
   const id = Number(req.params.id);
   const c = await ensureOwned(me.id, id);
@@ -76,7 +76,7 @@ router.get("/anthropic/conversations/:id", requireAuth(), async (req, res): Prom
   });
 });
 
-router.delete("/anthropic/conversations/:id", requireAuth(), async (req, res): Promise<void> => {
+router.delete("/gemini/conversations/:id", requireAuth(), async (req, res): Promise<void> => {
   const me = (req as unknown as { user: User }).user;
   const id = Number(req.params.id);
   const c = await ensureOwned(me.id, id);
@@ -85,7 +85,7 @@ router.delete("/anthropic/conversations/:id", requireAuth(), async (req, res): P
   res.status(204).end();
 });
 
-router.get("/anthropic/conversations/:id/messages", requireAuth(), async (req, res): Promise<void> => {
+router.get("/gemini/conversations/:id/messages", requireAuth(), async (req, res): Promise<void> => {
   const me = (req as unknown as { user: User }).user;
   const id = Number(req.params.id);
   const c = await ensureOwned(me.id, id);
@@ -103,7 +103,7 @@ router.get("/anthropic/conversations/:id/messages", requireAuth(), async (req, r
 });
 
 router.post(
-  "/anthropic/conversations/:id/messages",
+  "/gemini/conversations/:id/messages",
   requireAuth(),
   upload.single("attachment"),
   async (req, res): Promise<void> => {

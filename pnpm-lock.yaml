@@ -161,9 +161,6 @@ importers:
 
   artifacts/api-server:
     dependencies:
-      '@anthropic-ai/sdk':
-        specifier: ^0.53.0
-        version: 0.53.0
       '@google/generative-ai':
         specifier: ^0.24.1
         version: 0.24.1
@@ -176,9 +173,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
-      '@workspace/integrations-anthropic-ai':
+      '@workspace/integrations-gemini-ai':
         specifier: workspace:*
-        version: link:../../lib/integrations-anthropic-ai
+        version: link:../../lib/integrations-gemini-ai
       bcryptjs:
         specifier: ^2.4.3
         version: 2.4.3
@@ -711,7 +708,7 @@ importers:
         specifier: ^0.31.9
         version: 0.31.9
 
-  lib/integrations-anthropic-ai:
+  lib/integrations-gemini-ai:
     dependencies:
       '@google/generative-ai':
         specifier: ^0.24.1
@@ -740,10 +737,6 @@ packages:
 
   '@antfu/install-pkg@1.1.0':
     resolution: {integrity: sha512-MGQsmw10ZyI+EJo45CdSER4zEb+p31LpDAFp2Z3gkSd1yqVZGi0Ebx++YTEMonJy4oChEMLsxZ64j8FH6sSqtQ==}
-
-  '@anthropic-ai/sdk@0.53.0':
-    resolution: {integrity: sha512-bl2frVo0cgHCXTzQEIHXPH329uQXC4YKBaLBkZmUc59tNiR3GgcGpBZU7mwfyv5tPuU/yT7tGHyoe5AnjN02QA==}
-    hasBin: true
 
   '@apideck/better-ajv-errors@0.3.7':
     resolution: {integrity: sha512-TajUJwGWbDwkCx/CZi7tRE8PVB7simCvKJfHUsSdvps+aTM/PDPP4gkLmKnc+x3CE//y9i/nj74GqdL/hwk7Iw==}
@@ -5279,8 +5272,6 @@ snapshots:
     dependencies:
       package-manager-detector: 1.6.0
       tinyexec: 1.2.4
-
-  '@anthropic-ai/sdk@0.53.0': {}
 
   '@apideck/better-ajv-errors@0.3.7(ajv@8.18.0)':
     dependencies:

@@ -74,7 +74,7 @@ export default function Privacy() {
         <Section title="4. The AI tutor">
           <p>
             When you use the ZimTutor AI tutor, the messages you send are processed by our
-            AI provider, Anthropic, solely to generate a response for you. Please do not share
+            AI provider, Google Gemini, solely to generate a response for you. Please do not share
             sensitive personal information in tutor chats. Your tutor conversations are stored
             encrypted and are private to your account.
           </p>
@@ -83,7 +83,7 @@ export default function Privacy() {
         <Section title="5. How we share data">
           <p>We share information only with service providers that help us operate SmartZim, namely:</p>
           <ul className="list-disc pl-5 space-y-1">
-            <li><strong>Anthropic</strong> — to power AI tutoring responses.</li>
+            <li><strong>Google Gemini</strong> — to power AI tutoring responses.</li>
             <li><strong>Our hosting and storage providers</strong> — to run the app and store your data and uploaded files securely.</li>
           </ul>
           <p>We may also disclose information if required by law.</p>

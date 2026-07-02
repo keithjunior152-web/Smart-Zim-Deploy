@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useLocation } from "wouter";
 import {
-  useListAnthropicConversations,
-  useCreateAnthropicConversation,
-  useListAnthropicMessages,
-  useDeleteAnthropicConversation,
-  getListAnthropicConversationsQueryKey,
-  getListAnthropicMessagesQueryKey,
+  useListGeminiConversations,
+  useCreateGeminiConversation,
+  useListGeminiMessages,
+  useDeleteGeminiConversation,
+  getListGeminiConversationsQueryKey,
+  getListGeminiMessagesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card } from "@/components/ui/card";
@@ -53,10 +53,10 @@ export default function Tutor() {
   const initialSubject = queryParams.get("subject");
   const initialLevel = queryParams.get("level");
 
-  const { data: conversations } = useListAnthropicConversations();
-  const { data: messagesData } = useListAnthropicMessages(conversationId ?? 0);
-  const createConvo = useCreateAnthropicConversation();
-  const deleteConvo = useDeleteAnthropicConversation();
+  const { data: conversations } = useListGeminiConversations();
+  const { data: messagesData } = useListGeminiMessages(conversationId ?? 0);
+  const createConvo = useCreateGeminiConversation();
+  const deleteConvo = useDeleteGeminiConversation();
 
   const defaultLevel = initialLevel && ["P", "O", "A"].includes(initialLevel)
     ? (initialLevel as "P" | "O" | "A")
@@ -131,7 +131,7 @@ export default function Tutor() {
   const handleNew = () => {
     createConvo.mutate({ data: { title: "New chat" } }, {
       onSuccess: (res) => {
-        qc.invalidateQueries({ queryKey: getListAnthropicConversationsQueryKey() });
+        qc.invalidateQueries({ queryKey: getListGeminiConversationsQueryKey() });
         setLocation(`/app/tutor/${res.id}`);
       },
       onError: () => toast.error("Could not start a new conversation"),
@@ -141,7 +141,7 @@ export default function Tutor() {
   const handleDelete = (id: number) => {
     deleteConvo.mutate({ id }, {
       onSuccess: () => {
-        qc.invalidateQueries({ queryKey: getListAnthropicConversationsQueryKey() });
+        qc.invalidateQueries({ queryKey: getListGeminiConversationsQueryKey() });
         if (id === conversationId) setLocation("/app/tutor");
       },
     });
@@ -207,7 +207,7 @@ export default function Tutor() {
       formData.append("level", levelLabelLong(level));
       if (sendingFile) formData.append("attachment", sendingFile);
 
-      const response = await fetch(`${base}/api/anthropic/conversations/${convoId}/messages`, {
+      const response = await fetch(`${base}/api/gemini/conversations/${convoId}/messages`, {
         method: "POST",
         credentials: "include",
         headers: { Accept: "text/event-stream" },
@@ -254,8 +254,8 @@ export default function Tutor() {
       setBubbles((prev) => prev.map((b) => b.id === assistantBubble.id ? { ...b, content: "Sorry, I couldn't reach ZimTutor. Please try again.", pending: false } : b));
     } finally {
       setStreaming(false);
-      qc.invalidateQueries({ queryKey: getListAnthropicMessagesQueryKey(convoId) });
-      qc.invalidateQueries({ queryKey: getListAnthropicConversationsQueryKey() });
+      qc.invalidateQueries({ queryKey: getListGeminiMessagesQueryKey(convoId) });
+      qc.invalidateQueries({ queryKey: getListGeminiConversationsQueryKey() });
     }
   };
 

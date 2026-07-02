@@ -43,7 +43,7 @@ lib/db/                   — Drizzle ORM schema (23 tables) + migrations
 lib/api-spec/             — OpenAPI spec (source of truth)
 lib/api-client-react/     — Generated React Query hooks
 lib/api-zod/              — Generated Zod schemas
-lib/integrations-anthropic-ai/ — Anthropic AI client (lazy)
+lib/integrations-gemini-ai/     — Google Gemini AI client (lazy)
 lib/object-storage-web/   — Object storage client for browser
 api/index.ts              — Vercel serverless function entry
 vercel.json               — Vercel deployment config
@@ -58,7 +58,7 @@ MIGRATION.md              — Full Vercel + Supabase deployment guide
 - **Session auth over JWT**: Uses `express-session` + `connect-pg-simple` for reliable server-side sessions stored in Postgres — no token expiry management on the client.
 - **Vercel deployment**: Frontend is a static SPA build; API is wrapped as a Vercel serverless function at `api/index.ts`. All `/api/*` routes go to the function; everything else hits `index.html`.
 - **Supabase over Firebase**: PostgreSQL-compatible — Drizzle schema works unchanged. Supabase Storage replaces Replit Object Storage.
-- **Lazy initialization**: Anthropic and Supabase clients only throw when actually called — app starts cleanly in dev without all production keys set.
+- **Lazy initialization**: Gemini and Supabase clients only throw when actually called — app starts cleanly in dev without all production keys set.
 - **PWA**: vite-plugin-pwa with Workbox service worker, offline caching, installable manifest with SmartZim branding.
 
 ## Product

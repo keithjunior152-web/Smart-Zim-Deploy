@@ -13,7 +13,7 @@ const LAST_USER_KEY = "smartzim-last-user";
  */
 export const OFFLINE_SAFE_PREFIXES = [
   "/api/auth/me",
-  "/api/anthropic/conversations",
+  "/api/gemini/conversations",
   "/api/notes",
   "/api/papers",
   "/api/planner",

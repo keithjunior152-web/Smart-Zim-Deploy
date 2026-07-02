@@ -1385,24 +1385,24 @@ export const DeletePlannerSlotParams = zod.object({
   id: zod.coerce.number(),
 });
 
-export const ListAnthropicConversationsResponseItem = zod.object({
+export const ListGeminiConversationsResponseItem = zod.object({
   id: zod.number(),
   title: zod.string(),
   createdAt: zod.coerce.date(),
 });
-export const ListAnthropicConversationsResponse = zod.array(
-  ListAnthropicConversationsResponseItem,
+export const ListGeminiConversationsResponse = zod.array(
+  ListGeminiConversationsResponseItem,
 );
 
-export const CreateAnthropicConversationBody = zod.object({
+export const CreateGeminiConversationBody = zod.object({
   title: zod.string(),
 });
 
-export const GetAnthropicConversationParams = zod.object({
+export const GetGeminiConversationParams = zod.object({
   id: zod.coerce.number(),
 });
 
-export const GetAnthropicConversationResponse = zod.object({
+export const GetGeminiConversationResponse = zod.object({
   id: zod.number(),
   title: zod.string(),
   createdAt: zod.coerce.date(),
@@ -1417,30 +1417,30 @@ export const GetAnthropicConversationResponse = zod.object({
   ),
 });
 
-export const DeleteAnthropicConversationParams = zod.object({
+export const DeleteGeminiConversationParams = zod.object({
   id: zod.coerce.number(),
 });
 
-export const ListAnthropicMessagesParams = zod.object({
+export const ListGeminiMessagesParams = zod.object({
   id: zod.coerce.number(),
 });
 
-export const ListAnthropicMessagesResponseItem = zod.object({
+export const ListGeminiMessagesResponseItem = zod.object({
   id: zod.number(),
   conversationId: zod.number(),
   role: zod.string(),
   content: zod.string(),
   createdAt: zod.coerce.date(),
 });
-export const ListAnthropicMessagesResponse = zod.array(
-  ListAnthropicMessagesResponseItem,
+export const ListGeminiMessagesResponse = zod.array(
+  ListGeminiMessagesResponseItem,
 );
 
-export const SendAnthropicMessageParams = zod.object({
+export const SendGeminiMessageParams = zod.object({
   id: zod.coerce.number(),
 });
 
-export const SendAnthropicMessageBody = zod.object({
+export const SendGeminiMessageBody = zod.object({
   content: zod.string(),
   subject: zod.string().nullish(),
   level: zod.string().nullish(),

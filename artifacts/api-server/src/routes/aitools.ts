@@ -2,7 +2,7 @@ import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
 import multer from "multer";
 import { db, quizSessions, topicAttempts, type QuizQuestion, type User } from "@workspace/db";
-import { generateText, generateWithParts } from "@workspace/integrations-anthropic-ai";
+import { generateText, generateWithParts } from "@workspace/integrations-gemini-ai";
 import { requireAuth, requireRole } from "../lib/auth";
 import type { Part } from "@google/generative-ai";
 

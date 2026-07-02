@@ -36,8 +36,8 @@ tags:
     description: Syllabus topics
   - name: planner
     description: Study planner
-  - name: anthropic
-    description: AI tutor (Anthropic Claude)
+  - name: gemini
+    description: AI tutor (Google Gemini)
 paths:
   /healthz:
     get:
@@ -1298,11 +1298,11 @@ paths:
         "204":
           description: Deleted
 
-  # ===== ANTHROPIC AI TUTOR =====
-  /anthropic/conversations:
+  # ===== GEMINI AI TUTOR =====
+  /gemini/conversations:
     get:
-      operationId: listAnthropicConversations
-      tags: [anthropic]
+      operationId: listGeminiConversations
+      tags: [gemini]
       responses:
         "200":
           description: Conversations
@@ -1311,27 +1311,27 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/AnthropicConversation"
+                  $ref: "#/components/schemas/GeminiConversation"
     post:
-      operationId: createAnthropicConversation
-      tags: [anthropic]
+      operationId: createGeminiConversation
+      tags: [gemini]
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateAnthropicConversationInput"
+              $ref: "#/components/schemas/CreateGeminiConversationInput"
       responses:
         "201":
           description: Created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AnthropicConversation"
-  /anthropic/conversations/{id}:
+                $ref: "#/components/schemas/GeminiConversation"
+  /gemini/conversations/{id}:
     get:
-      operationId: getAnthropicConversation
-      tags: [anthropic]
+      operationId: getGeminiConversation
+      tags: [gemini]
       parameters:
         - name: id
           in: path
@@ -1344,16 +1344,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AnthropicConversationWithMessages"
+                $ref: "#/components/schemas/GeminiConversationWithMessages"
         "404":
           description: Not found
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AnthropicError"
+                $ref: "#/components/schemas/GeminiError"
     delete:
-      operationId: deleteAnthropicConversation
-      tags: [anthropic]
+      operationId: deleteGeminiConversation
+      tags: [gemini]
       parameters:
         - name: id
           in: path
@@ -1368,11 +1368,11 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AnthropicError"
-  /anthropic/conversations/{id}/messages:
+                $ref: "#/components/schemas/GeminiError"
+  /gemini/conversations/{id}/messages:
     get:
-      operationId: listAnthropicMessages
-      tags: [anthropic]
+      operationId: listGeminiMessages
+      tags: [gemini]
       parameters:
         - name: id
           in: path
@@ -1387,10 +1387,10 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/AnthropicMessage"
+                  $ref: "#/components/schemas/GeminiMessage"
     post:
-      operationId: sendAnthropicMessage
-      tags: [anthropic]
+      operationId: sendGeminiMessage
+      tags: [gemini]
       parameters:
         - name: id
           in: path
@@ -1402,7 +1402,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/SendAnthropicMessageInput"
+              $ref: "#/components/schemas/SendGeminiMessageInput"
       responses:
         "200":
           description: SSE stream
@@ -2794,7 +2794,7 @@ components:
             $ref: "#/components/schemas/PlannerSlot"
       required: [summary, slots]
 
-    AnthropicConversation:
+    GeminiConversation:
       type: object
       properties:
         id: { type: integer }
@@ -2802,7 +2802,7 @@ components:
         createdAt: { type: string, format: date-time }
       required: [id, title, createdAt]
 
-    AnthropicMessage:
+    GeminiMessage:
       type: object
       properties:
         id: { type: integer }
@@ -2812,13 +2812,13 @@ components:
         createdAt: { type: string, format: date-time }
       required: [id, conversationId, role, content, createdAt]
 
-    CreateAnthropicConversationInput:
+    CreateGeminiConversationInput:
       type: object
       properties:
         title: { type: string }
       required: [title]
 
-    SendAnthropicMessageInput:
+    SendGeminiMessageInput:
       type: object
       properties:
         content: { type: string }
@@ -2827,7 +2827,7 @@ components:
         grade: { type: ["string", "null"] }
       required: [content]
 
-    AnthropicConversationWithMessages:
+    GeminiConversationWithMessages:
       type: object
       properties:
         id: { type: integer }
@@ -2836,10 +2836,10 @@ components:
         messages:
           type: array
           items:
-            $ref: "#/components/schemas/AnthropicMessage"
+            $ref: "#/components/schemas/GeminiMessage"
       required: [id, title, createdAt, messages]
 
-    AnthropicError:
+    GeminiError:
       type: object
       properties:
         error: { type: string }

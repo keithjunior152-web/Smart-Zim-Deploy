@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { and, eq, sql } from "drizzle-orm";
 import { db, plannerSlots, topicAttempts, examDates, syllabusTopics, type User } from "@workspace/db";
-import { generateText } from "@workspace/integrations-anthropic-ai";
+import { generateText } from "@workspace/integrations-gemini-ai";
 import { requireRole } from "../lib/auth";
 
 const router: IRouter = Router();

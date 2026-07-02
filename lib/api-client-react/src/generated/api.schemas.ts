@@ -626,13 +626,13 @@ export interface StudyPlanResult {
   slots: PlannerSlot[];
 }
 
-export interface AnthropicConversation {
+export interface GeminiConversation {
   id: number;
   title: string;
   createdAt: string;
 }
 
-export interface AnthropicMessage {
+export interface GeminiMessage {
   id: number;
   conversationId: number;
   role: string;
@@ -640,11 +640,11 @@ export interface AnthropicMessage {
   createdAt: string;
 }
 
-export interface CreateAnthropicConversationInput {
+export interface CreateGeminiConversationInput {
   title: string;
 }
 
-export interface SendAnthropicMessageInput {
+export interface SendGeminiMessageInput {
   content: string;
   /** @nullable */
   subject?: string | null;
@@ -654,14 +654,14 @@ export interface SendAnthropicMessageInput {
   grade?: string | null;
 }
 
-export interface AnthropicConversationWithMessages {
+export interface GeminiConversationWithMessages {
   id: number;
   title: string;
   createdAt: string;
-  messages: AnthropicMessage[];
+  messages: GeminiMessage[];
 }
 
-export interface AnthropicError {
+export interface GeminiError {
   error: string;
 }
 
