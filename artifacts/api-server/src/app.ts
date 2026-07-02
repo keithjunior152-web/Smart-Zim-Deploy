@@ -58,11 +58,20 @@ const _devFallback =
 
 const allowedOrigins = [...new Set([..._explicit, ..._replitDomains, ..._devFallback])];
 
-app.use(
+app.use((req, res, next) => {
+  // The frontend and API can be served from the same Vercel deployment
+  // domain (via rewrites). Browsers still send an Origin header for
+  // same-origin POST/PUT requests, so treat "origin matches the request's
+  // own host" as always allowed — this covers every Vercel
+  // production/preview URL without needing to enumerate them.
+  const forwardedHost = req.headers["x-forwarded-host"];
+  const host = (Array.isArray(forwardedHost) ? forwardedHost[0] : forwardedHost) || req.headers.host;
+
   cors({
     origin: (origin, callback) => {
       // No origin = same-origin or server-to-server, always allow
       if (!origin) return callback(null, true);
+      if (host && origin === `https://${host}`) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
       // In dev, also allow any *.replit.dev or *.repl.co subdomain
       if (
@@ -74,8 +83,8 @@ app.use(
       callback(new Error(`CORS blocked: ${origin}`));
     },
     credentials: true,
-  }),
-);
+  })(req, res, next);
+});
 
 // Stripe webhook MUST come before express.json() so it receives the raw body
 // for signature verification.
