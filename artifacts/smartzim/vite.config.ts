@@ -454,10 +454,24 @@ function smartzimSeoPlugin(): Plugin {
       try {
         ministryPosts = await serverEntry.fetchMinistryPosts();
       } catch (err) {
+        const causeChain: string[] = [];
+        let current: unknown = err;
+        const seen = new Set<unknown>();
+        while (
+          current &&
+          typeof current === "object" &&
+          !seen.has(current)
+        ) {
+          seen.add(current);
+          const msg =
+            current instanceof Error ? current.message : String(current);
+          causeChain.push(msg);
+          current = (current as { cause?: unknown }).cause;
+        }
         throw new Error(
           `Failed to fetch ministry announcements from the database during build. ` +
             `The /ministry route is a canonical indexed page and must not be published ` +
-            `with empty content. Original error: ${err instanceof Error ? err.message : String(err)}`,
+            `with empty content. Original error chain: ${causeChain.join(" -> caused by -> ")}`,
         );
       }
 
