@@ -397,6 +397,28 @@ function smartzimSeoPlugin(): Plugin {
           rollupOptions: {
             input: path.resolve(artifactDir, "src/entry-server.tsx"),
             output: { format: "esm" },
+            // Externalize all bare package imports (react, pg, @workspace/db, etc.)
+            // instead of bundling them. This is a transient build-time SSR entry
+            // that runs from within the monorepo's own node_modules, so bare
+            // specifiers resolve fine at runtime via Node. Bundling them instead
+            // makes Rollup statically analyze packages like `pg`, which does a
+            // conditional `require("pg-native")` for an optional native binding
+            // that isn't installed — bundling that require breaks the build.
+            external: (id: string) => {
+              if (
+                id.startsWith(".") ||
+                id.startsWith("@/") ||
+                path.isAbsolute(id)
+              ) {
+                return false;
+              }
+              // Workspace packages (e.g. @workspace/db) ship raw TypeScript
+              // source, not pre-built JS, so they must still be bundled by
+              // Rollup here. Only real npm dependencies (already
+              // plain-JS in node_modules) are safe to leave external.
+              if (id.startsWith("@workspace/")) return false;
+              return true;
+            },
           },
         },
         logLevel: "warn",
