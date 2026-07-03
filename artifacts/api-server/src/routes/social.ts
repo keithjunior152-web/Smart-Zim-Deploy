@@ -10,6 +10,7 @@ import {
   teacherConnections,
   skillEndorsements,
   userFollows,
+  notes,
   type User,
 } from "@workspace/db";
 import { requireAuth } from "../lib/auth";
@@ -85,13 +86,17 @@ router.get("/social/profile/:userId", requireAuth(), async (req, res): Promise<v
   const me = (req as unknown as { user: User }).user;
   const userId = Number(req.params.userId);
   const [user] = await db
-    .select({ id: users.id, name: users.name, role: users.role, school: users.school, profilePhotoUrl: users.profilePhotoUrl, coverPhotoUrl: users.coverPhotoUrl, grade: users.grade })
+    .select({ id: users.id, name: users.name, role: users.role, school: users.school, profilePhotoUrl: users.profilePhotoUrl, coverPhotoUrl: users.coverPhotoUrl, grade: users.grade, phone: users.phone, email: users.email })
     .from(users).where(eq(users.id, userId)).limit(1);
   if (!user) { res.status(404).json({ error: "User not found" }); return; }
   const [profile] = await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, userId)).limit(1);
   const endorsements = await db.select().from(skillEndorsements).where(eq(skillEndorsements.profileUserId, userId));
   const [followRow] = await db.select().from(userFollows).where(and(eq(userFollows.followerId, me.id), eq(userFollows.followingId, userId))).limit(1);
-  res.json({ ...user, profile: profile ?? null, endorsements, isFollowing: !!followRow });
+  const teacherNotes = user.role === "teacher"
+    ? await db.select({ id: notes.id, title: notes.title, subject: notes.subject, topic: notes.topic, fileUrl: notes.fileUrl, createdAt: notes.createdAt })
+        .from(notes).where(and(eq(notes.teacherId, userId), eq(notes.status, "published"))).orderBy(desc(notes.createdAt)).limit(20)
+    : [];
+  res.json({ ...user, profile: profile ?? null, endorsements, isFollowing: !!followRow, notes: teacherNotes });
 });
 
 // Public read-only teacher profile (no auth required — for SEO/crawlers)
@@ -99,12 +104,14 @@ router.get("/social/public-profile/:userId", async (req, res): Promise<void> => 
   const userId = Number(req.params.userId);
   if (!Number.isInteger(userId) || userId <= 0) { res.status(400).json({ error: "Invalid userId" }); return; }
   const [user] = await db
-    .select({ id: users.id, name: users.name, role: users.role, school: users.school, profilePhotoUrl: users.profilePhotoUrl, coverPhotoUrl: users.coverPhotoUrl, grade: users.grade })
+    .select({ id: users.id, name: users.name, role: users.role, school: users.school, profilePhotoUrl: users.profilePhotoUrl, coverPhotoUrl: users.coverPhotoUrl, grade: users.grade, phone: users.phone, email: users.email })
     .from(users).where(and(eq(users.id, userId), eq(users.role, "teacher"))).limit(1);
   if (!user) { res.status(404).json({ error: "Teacher not found" }); return; }
   const [profile] = await db.select().from(teacherProfiles).where(eq(teacherProfiles.userId, userId)).limit(1);
   const endorsements = await db.select().from(skillEndorsements).where(eq(skillEndorsements.profileUserId, userId));
-  res.json({ ...user, profile: profile ?? null, endorsements });
+  const teacherNotes = await db.select({ id: notes.id, title: notes.title, subject: notes.subject, topic: notes.topic, fileUrl: notes.fileUrl, createdAt: notes.createdAt })
+    .from(notes).where(and(eq(notes.teacherId, userId), eq(notes.status, "published"))).orderBy(desc(notes.createdAt)).limit(20);
+  res.json({ ...user, profile: profile ?? null, endorsements, notes: teacherNotes });
 });
 
 // Directory of all teachers

@@ -7,7 +7,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle2, MapPin, Briefcase, GraduationCap, Star, ArrowLeft,
-  ThumbsUp, Globe, Users,
+  ThumbsUp, Globe, Users, Phone, Mail, FileText, Download,
 } from "lucide-react";
 import { MetaTags } from "@/components/MetaTags";
 
@@ -24,8 +24,10 @@ export default function PublicTeacherProfile() {
       return res.json() as Promise<{
         id: number; name: string; role: string; school: string | null;
         profilePhotoUrl: string | null; coverPhotoUrl: string | null; grade: string | null;
+        phone: string | null; email: string | null;
         profile: Record<string, unknown> | null;
         endorsements: Array<{ id: number; skill: string; endorserId: number }>;
+        notes: Array<{ id: number; title: string; subject: string; fileUrl: string | null }>;
       }>;
     },
     enabled: !!userId && !isNaN(userId),
@@ -209,6 +211,55 @@ export default function PublicTeacherProfile() {
                   <Badge key={s.trim()} variant="secondary">{s.trim()}</Badge>
                 ))}
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Contact info */}
+        {(profileData.phone || profileData.email) && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Phone className="h-4 w-4" />Contact
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {profileData.phone && (
+                <a href={`tel:${profileData.phone}`} className="flex items-center gap-2 text-sm hover:text-primary">
+                  <Phone className="h-4 w-4 text-muted-foreground" />{profileData.phone}
+                </a>
+              )}
+              {profileData.email && (
+                <a href={`mailto:${profileData.email}`} className="flex items-center gap-2 text-sm hover:text-primary">
+                  <Mail className="h-4 w-4 text-muted-foreground" />{profileData.email}
+                </a>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Uploaded notes/resources */}
+        {profileData.notes?.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <FileText className="h-4 w-4" />Notes & Resources
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {profileData.notes.map((n) => (
+                <div key={n.id} className="flex items-center justify-between gap-2 border rounded-lg px-3 py-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{n.title}</p>
+                    <p className="text-xs text-muted-foreground">{n.subject}</p>
+                  </div>
+                  {n.fileUrl && (
+                    <a href={n.fileUrl} target="_blank" rel="noreferrer" className="flex-shrink-0 text-primary hover:text-primary/80" title="Download">
+                      <Download className="h-4 w-4" />
+                    </a>
+                  )}
+                </div>
+              ))}
             </CardContent>
           </Card>
         )}

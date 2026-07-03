@@ -12,14 +12,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Plus, Pencil, Trash2, BookOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, BookOpen, FileText, X } from "lucide-react";
 import { toast } from "sonner";
 import { useCurricula, allSubjects } from "@/lib/useCurriculum";
 import { useAuth } from "@/lib/auth";
+import { MediaUpload } from "@/components/ui/media-upload";
 
-interface NoteForm { curriculum: string; title: string; subject: string; level: string; grade: string; topic: string; chapterNumber: number; content: string; readMinutes: number; featured: boolean; }
+interface NoteForm { curriculum: string; title: string; subject: string; level: string; grade: string; topic: string; chapterNumber: number; content: string; readMinutes: number; featured: boolean; fileUrl: string | null; }
 
-const empty: NoteForm = { curriculum: "ZIMSEC", title: "", subject: "Mathematics", level: "O", grade: "Form 4", topic: "", chapterNumber: 1, content: "", readMinutes: 5, featured: false };
+const empty: NoteForm = { curriculum: "ZIMSEC", title: "", subject: "Mathematics", level: "O", grade: "Form 4", topic: "", chapterNumber: 1, content: "", readMinutes: 5, featured: false, fileUrl: null };
 
 export default function TeacherNotes() {
   const { user } = useAuth();
@@ -40,7 +41,7 @@ export default function TeacherNotes() {
   const refresh = () => qc.invalidateQueries({ queryKey: getListNotesQueryKey() });
 
   const startCreate = () => { setEditing(null); setForm(empty); setOpen(true); };
-  const startEdit = (n: { id: number; curriculum?: string | null; title: string; subject: string; level: string; grade?: string | null; topic: string; chapterNumber?: number | null; content: string; readMinutes?: number | null; featured?: boolean | null }) => { setEditing({ id: n.id }); setForm({ curriculum: n.curriculum ?? "ZIMSEC", title: n.title, subject: n.subject, level: n.level, grade: n.grade ?? "", topic: n.topic, chapterNumber: n.chapterNumber ?? 1, content: n.content, readMinutes: n.readMinutes ?? 5, featured: n.featured ?? false }); setOpen(true); };
+  const startEdit = (n: { id: number; curriculum?: string | null; title: string; subject: string; level: string; grade?: string | null; topic: string; chapterNumber?: number | null; content: string; readMinutes?: number | null; featured?: boolean | null; fileUrl?: string | null }) => { setEditing({ id: n.id }); setForm({ curriculum: n.curriculum ?? "ZIMSEC", title: n.title, subject: n.subject, level: n.level, grade: n.grade ?? "", topic: n.topic, chapterNumber: n.chapterNumber ?? 1, content: n.content, readMinutes: n.readMinutes ?? 5, featured: n.featured ?? false, fileUrl: n.fileUrl ?? null }); setOpen(true); };
 
   const submit = () => {
     const cb = { onSuccess: () => { toast.success("Saved"); refresh(); setOpen(false); }, onError: () => toast.error("Failed to save") };
@@ -72,6 +73,11 @@ export default function TeacherNotes() {
               <CardHeader><CardTitle className="text-lg">{n.title}</CardTitle></CardHeader>
               <CardContent>
                 <div className="text-sm text-muted-foreground mb-3">{n.subject} · {n.level} · {n.topic}</div>
+                {n.fileUrl && (
+                  <a href={n.fileUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs text-primary mb-3 hover:underline">
+                    <FileText className="h-3.5 w-3.5" />Attached file
+                  </a>
+                )}
                 <div className="flex gap-2"><Button size="sm" variant="outline" onClick={() => startEdit(n)}><Pencil className="h-3 w-3 mr-1" />Edit</Button><Button size="sm" variant="outline" onClick={() => remove(n.id)}><Trash2 className="h-3 w-3 mr-1" />Delete</Button></div>
               </CardContent>
             </Card>
@@ -110,6 +116,30 @@ export default function TeacherNotes() {
               <div><Label>Read minutes</Label><Input type="number" value={form.readMinutes} onChange={(e) => setForm({ ...form, readMinutes: Number(e.target.value) })} /></div>
             </div>
             <div><Label>Content (markdown)</Label><Textarea rows={10} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} /></div>
+            <div>
+              <Label>Attach a file (optional — any format: PDF, Excel, Word, PPT, image, etc.)</Label>
+              {form.fileUrl ? (
+                <div className="mt-1.5 flex items-center justify-between gap-2 border rounded-lg px-3 py-2 bg-muted text-sm">
+                  <a href={form.fileUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-primary truncate hover:underline">
+                    <FileText className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{form.fileUrl.split("/").pop()}</span>
+                  </a>
+                  <button type="button" onClick={() => setForm({ ...form, fileUrl: null })} className="text-muted-foreground hover:text-destructive flex-shrink-0">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div className="mt-1.5">
+                  <MediaUpload
+                    icon="doc"
+                    label="Upload file"
+                    accept="*/*"
+                    maxMB={150}
+                    onUploaded={(objectPath) => setForm({ ...form, fileUrl: objectPath })}
+                  />
+                </div>
+              )}
+            </div>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setOpen(false)}>Cancel</Button><Button onClick={submit} disabled={create.isPending || update.isPending}>Save</Button></DialogFooter>
         </DialogContent>

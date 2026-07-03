@@ -98,6 +98,13 @@ router.patch("/notes/:id", requireRole("teacher"), async (req, res): Promise<voi
   if (typeof b?.topic === "string") update.topic = b.topic;
   if (typeof b?.featured === "boolean") update.featured = b.featured;
   if (typeof b?.status === "string") update.status = b.status;
+  if (typeof b?.fileUrl === "string" || b?.fileUrl === null) update.fileUrl = b.fileUrl;
+  if (typeof b?.subject === "string") update.subject = b.subject;
+  if (typeof b?.curriculum === "string") update.curriculum = b.curriculum;
+  if (typeof b?.level === "string") update.level = b.level;
+  if (typeof b?.grade === "string") update.grade = b.grade;
+  if (typeof b?.chapterNumber === "number") update.chapterNumber = b.chapterNumber;
+  if (typeof b?.readMinutes === "number") update.readMinutes = b.readMinutes;
   const [n] = await db.update(notes).set(update).where(eq(notes.id, id)).returning();
   if (!n) {
     res.status(404).json({ error: "Not found" });

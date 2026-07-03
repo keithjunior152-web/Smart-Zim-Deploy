@@ -29,6 +29,7 @@ import { Label } from "@/components/ui/label";
 import {
   CheckCircle2, MapPin, Briefcase, Edit2, UserPlus, ThumbsUp,
   GraduationCap, Star, ArrowLeft, Camera, Loader2, Users, MessageCircle,
+  Phone, Mail, FileText, Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ALL_SUBJECTS } from "@/lib/curriculum";
@@ -319,6 +320,47 @@ export default function TeacherProfilePage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Contact info */}
+      {((profileData as { phone?: string | null }).phone || (profileData as { email?: string | null }).email) && (
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><Phone className="h-4 w-4" />Contact</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {(profileData as { phone?: string | null }).phone && (
+              <a href={`tel:${(profileData as { phone?: string | null }).phone}`} className="flex items-center gap-2 text-sm hover:text-primary">
+                <Phone className="h-4 w-4 text-muted-foreground" />{(profileData as { phone?: string | null }).phone}
+              </a>
+            )}
+            {(profileData as { email?: string | null }).email && (
+              <a href={`mailto:${(profileData as { email?: string | null }).email}`} className="flex items-center gap-2 text-sm hover:text-primary">
+                <Mail className="h-4 w-4 text-muted-foreground" />{(profileData as { email?: string | null }).email}
+              </a>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Uploaded notes/resources */}
+      {(profileData as { notes?: Array<{ id: number; title: string; subject: string; fileUrl: string | null }> }).notes?.length ? (
+        <Card>
+          <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><FileText className="h-4 w-4" />Notes & Resources</CardTitle></CardHeader>
+          <CardContent className="space-y-2">
+            {(profileData as { notes?: Array<{ id: number; title: string; subject: string; fileUrl: string | null }> }).notes!.map((n) => (
+              <div key={n.id} className="flex items-center justify-between gap-2 border rounded-lg px-3 py-2">
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{n.title}</p>
+                  <p className="text-xs text-muted-foreground">{n.subject}</p>
+                </div>
+                {n.fileUrl && (
+                  <a href={n.fileUrl} target="_blank" rel="noreferrer" className="flex-shrink-0 text-primary hover:text-primary/80" title="Download">
+                    <Download className="h-4 w-4" />
+                  </a>
+                )}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Skills & Endorsements */}
       {skillsArr.length > 0 && (

@@ -14,6 +14,11 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 150
  * Upload a file directly through the server to object storage.
  * Accepts multipart/form-data with a "file" field.
  * Returns { objectPath } which can be used to serve the file via GET /storage/objects/*
+ *
+ * NOTE: Vercel serverless functions cap request bodies at ~4.5MB, so this route
+ * only works for small files. Larger uploads (video, etc.) should use
+ * POST /storage/upload-url instead, which uploads directly to Supabase Storage
+ * from the browser and bypasses the serverless body-size limit entirely.
  */
 router.post("/storage/uploads", upload.single("file"), async (req: Request, res: Response) => {
   try {
@@ -27,6 +32,24 @@ router.post("/storage/uploads", upload.single("file"), async (req: Request, res:
   } catch (error) {
     req.log.error({ err: error }, "Error uploading file");
     res.status(500).json({ error: "Failed to upload file" });
+  }
+});
+
+/**
+ * POST /storage/upload-url
+ *
+ * Returns a short-lived signed URL that the browser can PUT the file to
+ * directly, bypassing this server entirely. This is the recommended path for
+ * large files (videos, etc.) on serverless deployments where request bodies
+ * are capped at a few MB.
+ */
+router.post("/storage/upload-url", async (req: Request, res: Response) => {
+  try {
+    const { uploadUrl, objectPath } = await objectStorageService.getObjectEntityUploadURL();
+    res.json({ uploadUrl, objectPath });
+  } catch (error) {
+    req.log.error({ err: error }, "Error creating signed upload URL");
+    res.status(500).json({ error: "Failed to prepare upload" });
   }
 });
 

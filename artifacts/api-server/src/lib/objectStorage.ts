@@ -77,7 +77,7 @@ export class ObjectStorageService {
     return `/objects/uploads/${objectId}`;
   }
 
-  async getObjectEntityUploadURL(): Promise<string> {
+  async getObjectEntityUploadURL(): Promise<{ uploadUrl: string; objectPath: string }> {
     const supabase = getSupabase();
     const objectId = randomUUID();
     const uploadPath = `uploads/${objectId}`;
@@ -85,7 +85,7 @@ export class ObjectStorageService {
       .from(PRIVATE_BUCKET)
       .createSignedUploadUrl(uploadPath);
     if (error || !data) throw new Error(`Failed to create signed upload URL: ${error?.message}`);
-    return data.signedUrl;
+    return { uploadUrl: data.signedUrl, objectPath: `/objects/${uploadPath}` };
   }
 
   async getObjectEntityFile(objectPath: string): Promise<{ bucket: string; path: string }> {

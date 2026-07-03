@@ -2,7 +2,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useLocation } from "wouter";
-import { useRegisterUser } from "@workspace/api-client-react";
+import { useRegisterUser, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { MetaTags } from "@/components/MetaTags";
 import { Button } from "@/components/ui/button";
 import {
@@ -51,6 +52,7 @@ export default function Register() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const registerUser = useRegisterUser();
+  const queryClient = useQueryClient();
   const [step, setStep] = useState<1 | 2>(1);
   
   const roleForm = useForm<RoleFormValues>({
@@ -87,8 +89,19 @@ export default function Register() {
       {
         onSuccess: (res) => {
           toast({ title: "Registration successful!" });
+          // Seed the auth cache with the user we just created BEFORE
+          // clearing anything else. Clearing the /api/auth/me query while
+          // it's actively mounted (in AuthProvider) causes React Query to
+          // auto-refetch it in the background; that refetch can race and
+          // overwrite this optimistic value with a transient failure.
+          // Removing every other query (but excluding the auth key) avoids
+          // that race while still dropping any previous user's cached data.
+          const authKey = getGetCurrentUserQueryKey();
+          queryClient.setQueryData(authKey, res.user);
+          queryClient.removeQueries({
+            predicate: (query) => query.queryKey[0] !== authKey[0],
+          });
           if (res.user.status === "pending") setLocation("/pending");
-          else if (res.user.isSuperAdmin) setLocation("/app");
           else setLocation("/app");
         },
         onError: (err) => {

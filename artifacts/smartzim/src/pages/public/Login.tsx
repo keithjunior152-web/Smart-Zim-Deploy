@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Link, useLocation } from "wouter";
-import { useLoginUser } from "@workspace/api-client-react";
+import { useLoginUser, getGetCurrentUserQueryKey } from "@workspace/api-client-react";
 import { MetaTags } from "@/components/MetaTags";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -53,7 +53,18 @@ export default function Login() {
       {
         onSuccess: (res) => {
           toast({ title: "Welcome back!" });
-          queryClient.clear();
+          // Seed the auth cache with the user we just got back BEFORE
+          // clearing anything else. Clearing the /api/auth/me query while
+          // it's actively mounted (in AuthProvider) causes React Query to
+          // auto-refetch it in the background; that refetch can race and
+          // overwrite this optimistic value with a transient failure.
+          // Removing every other query (but excluding the auth key) avoids
+          // that race while still dropping any previous user's cached data.
+          const authKey = getGetCurrentUserQueryKey();
+          queryClient.setQueryData(authKey, res.user);
+          queryClient.removeQueries({
+            predicate: (query) => query.queryKey[0] !== authKey[0],
+          });
           if (res.user.status === "pending") setLocation("/pending");
           else if (res.user.status === "rejected") setLocation("/rejected");
           else setLocation("/app");

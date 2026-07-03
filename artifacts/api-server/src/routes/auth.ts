@@ -61,7 +61,9 @@ router.post("/auth/register", async (req, res): Promise<void> => {
       school: school ?? null,
       phone: phone ?? null,
       referralCode: referralCode ?? null,
-      status: isSuper ? "approved" : "pending",
+      // Registrations are auto-approved for both students and teachers —
+      // there is no manual admin review step in the signup flow anymore.
+      status: "approved",
       subscriptionStatus: isSuper ? "active" : "trial",
       isSuperAdmin: isSuper,
       trialStartDate: new Date(),
@@ -69,19 +71,13 @@ router.post("/auth/register", async (req, res): Promise<void> => {
     })
     .returning();
 
-  // Notify super admins about new pending user
-  if (!isSuper) {
-    const supers = await db.select().from(users).where(eq(users.isSuperAdmin, true));
-    for (const s of supers) {
-      await db.insert(notifications).values({
-        userId: s.id,
-        type: "approval_required",
-        title: "New registration awaiting approval",
-        message: `${user.name} (${user.email}) registered as ${user.role}`,
-        link: "/app/admin/approvals",
-      });
-    }
-  }
+  await db.insert(notifications).values({
+    userId: user.id,
+    type: "approved",
+    title: "Welcome to SmartZim",
+    message: isSuper ? "Your account is ready." : "Your account is ready. Your 7-day trial starts now.",
+    link: "/app",
+  });
 
   req.session.userId = user.id;
   res.status(201).json({ user: serializeUser(user) });

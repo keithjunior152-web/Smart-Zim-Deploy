@@ -145,12 +145,25 @@ export default function TutoringMarketplace() {
                   <Card className="h-full flex flex-col">
                     <CardContent className="p-5 flex flex-col h-full">
                       <div className="flex items-start gap-3 mb-3">
-                        <Avatar className="h-11 w-11 flex-shrink-0">
-                          <AvatarImage src={listing.teacherPhoto ?? undefined} />
-                          <AvatarFallback className="bg-primary/10 text-primary font-bold">{listing.teacherName?.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
-                        </Avatar>
+                        <button
+                          type="button"
+                          onClick={() => setLocation(`/app/social/profile/${listing.teacherId}`)}
+                          className="flex-shrink-0"
+                          title="View teacher profile"
+                        >
+                          <Avatar className="h-11 w-11">
+                            <AvatarImage src={listing.teacherPhoto ?? undefined} />
+                            <AvatarFallback className="bg-primary/10 text-primary font-bold">{listing.teacherName?.split(" ").map(n => n[0]).join("").slice(0, 2)}</AvatarFallback>
+                          </Avatar>
+                        </button>
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate">{listing.teacherName}</p>
+                          <button
+                            type="button"
+                            onClick={() => setLocation(`/app/social/profile/${listing.teacherId}`)}
+                            className="font-semibold truncate hover:text-primary hover:underline text-left block"
+                          >
+                            {listing.teacherName}
+                          </button>
                           {listing.teacherSchool && <p className="text-xs text-muted-foreground truncate">{listing.teacherSchool}</p>}
                         </div>
                         <Badge variant="outline" className="flex-shrink-0">${(listing.hourlyRateCents / 100).toFixed(0)}/hr</Badge>
