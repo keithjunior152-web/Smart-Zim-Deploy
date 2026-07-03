@@ -1,3 +1,4 @@
 - [Stripe+PayPal payments](payments-integration.md) — custom implementation without stripe-replit-sync (free tier); webhook registered BEFORE express.json() in app.ts.
 - [Gemini AI client](gemini-client.md) — lib named integrations-anthropic-ai but now wraps Gemini 2.5 Flash; lazy init with GEMINI_API_KEY.
 - [Vercel functions config](vercel-functions-config.md) — vercel.json functions/rewrites keys must match actual api/ source file extension exactly, or Vercel build fails.
+- [Vercel serverless Express deployment](vercel-serverless-express-deployment.md) — dynamic import vs require ESM trap, api/ isolated typecheck, same-domain CORS trap, deploy debugging loop.
