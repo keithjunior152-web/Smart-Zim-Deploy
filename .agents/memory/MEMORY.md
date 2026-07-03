@@ -2,3 +2,4 @@
 - [Gemini AI client](gemini-client.md) — lib named integrations-anthropic-ai but now wraps Gemini 2.5 Flash; lazy init with GEMINI_API_KEY.
 - [Vercel functions config](vercel-functions-config.md) — vercel.json functions/rewrites keys must match actual api/ source file extension exactly, or Vercel build fails.
 - [Vercel serverless Express deployment](vercel-serverless-express-deployment.md) — dynamic import vs require ESM trap, api/ isolated typecheck, same-domain CORS trap, deploy debugging loop.
+- [Supabase new API keys](supabase-new-api-keys.md) — sb_secret_ keys break supabase-js storage admin calls ("Invalid Compact JWS"); need legacy JWT service_role key instead.
