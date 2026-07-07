@@ -119,6 +119,44 @@ export async function sendRejectionEmail(to: string, name: string, reason: strin
   });
 }
 
+export async function sendWelcomeEmail(to: string, name: string, role: string): Promise<void> {
+  const t = getTransporter();
+  if (!t) {
+    logger.warn({ to }, "SMTP not configured — skipping welcome email");
+    return;
+  }
+  const site = SITE();
+  const isStudent = role === "student";
+  await t.sendMail({
+    from: FROM(),
+    to,
+    subject: "🎓 Welcome to SmartZim — your account is ready!",
+    html: wrap(`
+      <h2>Welcome to SmartZim, ${name}! 🎉</h2>
+      <p>Your account has been created and your <strong>7-day free trial</strong> starts right now.</p>
+      ${isStudent ? `
+      <div class="tip">
+        <strong>Get started straight away:</strong><br/>
+        ✅ Access past papers &amp; study notes<br/>
+        ✅ Chat with ZimTutor, your AI study coach<br/>
+        ✅ Take daily quizzes and track your progress<br/>
+        ✅ Generate a personalised weekly study plan
+      </div>
+      ` : `
+      <div class="tip">
+        <strong>As a teacher you can:</strong><br/>
+        ✅ Upload notes &amp; study materials for students<br/>
+        ✅ Create and grade assignments<br/>
+        ✅ Manage your class channels<br/>
+        ✅ Build your teacher profile
+      </div>
+      `}
+      <a class="cta" href="${site}/app">Go to Dashboard →</a>
+      <p style="font-size:13px;color:#6b7c72;margin-top:20px">Questions? Contact us at <a href="mailto:support@smartzim.co.zw" style="color:#1a6b3c">support@smartzim.co.zw</a></p>
+    `),
+  });
+}
+
 export async function sendSubscriptionEmail(to: string, name: string, plan: string, expiry: Date): Promise<void> {
   const t = getTransporter();
   if (!t) {
