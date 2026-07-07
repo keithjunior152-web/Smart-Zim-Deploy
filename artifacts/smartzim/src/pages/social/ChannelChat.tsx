@@ -5,6 +5,7 @@ import {
   useListChannelMessages,
   useSendChannelMessage,
   useDeleteChannelMessage,
+  getListChannelMessagesQueryKey,
 } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,7 +45,7 @@ export default function ChannelChat() {
     sendMessage.mutate({ id: channelId, data: { content: text.trim() } }, {
       onSuccess: () => {
         setText("");
-        qc.invalidateQueries({ queryKey: ["listChannelMessages", channelId] });
+        qc.invalidateQueries({ queryKey: getListChannelMessagesQueryKey(channelId) });
       },
       onError: () => toast.error("Failed to send message"),
     });
@@ -52,7 +53,7 @@ export default function ChannelChat() {
 
   const handleDelete = (msgId: number) => {
     deleteMessage.mutate({ id: channelId, msgId }, {
-      onSuccess: () => qc.invalidateQueries({ queryKey: ["listChannelMessages", channelId] }),
+      onSuccess: () => qc.invalidateQueries({ queryKey: getListChannelMessagesQueryKey(channelId) }),
       onError: () => toast.error("Failed to delete"),
     });
   };

@@ -142,7 +142,7 @@ export default function DoubtBox() {
         body: JSON.stringify(body),
       }).then(r => r.json()),
     onSuccess: () => {
-      toast.success("Your question has been posted anonymously!");
+      toast.success(isAnonymous ? "Your question has been posted anonymously!" : "Your question has been posted!");
       setQuestion("");
       setSubject("");
       setShowForm(false);

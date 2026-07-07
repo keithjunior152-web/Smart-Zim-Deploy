@@ -38,7 +38,7 @@ export default function Channels() {
         <div className="text-center py-16 text-muted-foreground">
           <Hash className="h-12 w-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium">No channels yet</p>
-          <p className="text-sm mt-1">You'll be auto-joined to your class channel when the teacher creates it.</p>
+          <p className="text-sm mt-1">Make sure your profile has your school and grade set — your class channel will appear here automatically.</p>
         </div>
       ) : (
         <div className="space-y-3">

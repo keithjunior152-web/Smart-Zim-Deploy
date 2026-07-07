@@ -4,6 +4,8 @@ import {
   useListDmThreads,
   useGetDmThread,
   useSendDirectMessage,
+  getGetDmThreadQueryKey,
+  getListDmThreadsQueryKey,
 } from "@workspace/api-client-react";
 import { useAuth } from "@/lib/auth";
 import { useQueryClient } from "@tanstack/react-query";
@@ -44,9 +46,11 @@ function ThreadList({ onSelect }: { onSelect: (id: number) => void }) {
                 <span className="font-semibold text-sm truncate">{other?.name ?? "Unknown"}</span>
                 {other?.role && <Badge variant="secondary" className="text-[10px] capitalize">{other.role}</Badge>}
               </div>
-              <p className="text-xs text-muted-foreground truncate">{(t.lastMessage as { content: string }).content}</p>
+              <p className="text-xs text-muted-foreground truncate">{(t.lastMessage as { content?: string } | null)?.content ?? "No messages yet"}</p>
             </div>
-            <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatDistanceToNow(new Date((t.lastMessage as { createdAt: string }).createdAt), { addSuffix: true })}</span>
+            {(t.lastMessage as { createdAt?: string } | null)?.createdAt && (
+              <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatDistanceToNow(new Date((t.lastMessage as { createdAt: string }).createdAt), { addSuffix: true })}</span>
+            )}
           </button>
         );
       })}
@@ -73,8 +77,8 @@ function ChatWindow({ userId, onBack }: { userId: number; onBack: () => void }) 
     sendDm.mutate({ userId, data: { content: text.trim() } }, {
       onSuccess: () => {
         setText("");
-        qc.invalidateQueries({ queryKey: ["getDmThread", userId] });
-        qc.invalidateQueries({ queryKey: ["listDmThreads"] });
+        qc.invalidateQueries({ queryKey: getGetDmThreadQueryKey(userId) });
+        qc.invalidateQueries({ queryKey: getListDmThreadsQueryKey() });
       },
       onError: () => toast.error("Failed to send"),
     });

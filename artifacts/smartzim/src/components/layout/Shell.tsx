@@ -57,6 +57,7 @@ const studentNav = [
   { href: "/app/quiz", label: "Daily Quiz", icon: Zap },
   { href: "/app/focus", label: "Study Shield", icon: Shield },
   { href: "/app/achievements", label: "Achievements", icon: Trophy },
+  { href: "/app/social", label: "Social Feed", icon: Rss },
   { href: "/app/doubt-box", label: "Doubt Box", icon: HelpCircle },
   { href: "/app/countdown", label: "Exam Countdown", icon: Clock },
   { href: "/app/tutor", label: "AI Tutor", icon: MessageCircle },
