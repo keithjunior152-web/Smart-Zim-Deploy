@@ -28,6 +28,7 @@ import {
   requireAuth,
   SUPER_ADMIN_EMAILS,
 } from "../lib/auth";
+import { sendWelcomeEmail } from "../lib/email";
 
 const router: IRouter = Router();
 
@@ -81,6 +82,13 @@ router.post("/auth/register", async (req, res): Promise<void> => {
 
   req.session.userId = user.id;
   res.status(201).json({ user: serializeUser(user) });
+
+  // Send welcome email (fire-and-forget — don't block the response)
+  if (!isSuper) {
+    sendWelcomeEmail(user.email, user.name, role).catch((err) =>
+      req.log.warn({ err }, "Failed to send welcome email"),
+    );
+  }
 });
 
 router.post("/auth/login", async (req, res): Promise<void> => {
