@@ -1,10 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Play, Pause, RotateCcw, Coffee, Zap, Trophy, Clock } from "lucide-react";
+import { Shield, Play, Pause, RotateCcw, Coffee, Zap, Trophy, Clock, AlertTriangle, Lock } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
@@ -25,7 +25,11 @@ export default function StudyShield() {
   const [secondsLeft, setSecondsLeft] = useState(MODES[0].duration);
   const [running, setRunning] = useState(false);
   const [sessionsCompleted, setSessionsCompleted] = useState(0);
+  const [distractions, setDistractions] = useState(0);
+  const [showDistracted, setShowDistracted] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const qc = useQueryClient();
 
   const mode = MODES[modeIdx];
@@ -51,6 +55,56 @@ export default function StudyShield() {
     },
   });
 
+  const requestWakeLock = useCallback(async () => {
+    if (!("wakeLock" in navigator)) return;
+    try {
+      wakeLockRef.current = await (navigator as Navigator & { wakeLock: { request: (type: string) => Promise<WakeLockSentinel> } }).wakeLock.request("screen");
+    } catch {
+      /* wake lock not supported or denied — continue silently */
+    }
+  }, []);
+
+  const releaseWakeLock = useCallback(async () => {
+    if (wakeLockRef.current) {
+      await wakeLockRef.current.release().catch(() => {});
+      wakeLockRef.current = null;
+    }
+  }, []);
+
+  const enterFullscreen = useCallback(async () => {
+    try {
+      const el = document.documentElement;
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if ((el as HTMLElement & { webkitRequestFullscreen?: () => Promise<void> }).webkitRequestFullscreen) {
+        await (el as HTMLElement & { webkitRequestFullscreen: () => Promise<void> }).webkitRequestFullscreen();
+      }
+    } catch {
+      /* fullscreen denied — fine, continue */
+    }
+  }, []);
+
+  const exitFullscreen = useCallback(async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+    } catch { /* ignore */ }
+  }, []);
+
+  useEffect(() => {
+    if (!running) return;
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "hidden" && running) {
+        setDistractions(d => d + 1);
+        setShowDistracted(true);
+        setRunning(false);
+        toast.error("⚠️ Distraction detected! Timer paused. Stay focused! 🦁");
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [running]);
+
   useEffect(() => {
     if (running) {
       intervalRef.current = setInterval(() => {
@@ -58,10 +112,12 @@ export default function StudyShield() {
           if (s <= 1) {
             clearInterval(intervalRef.current!);
             setRunning(false);
+            releaseWakeLock();
+            exitFullscreen();
             if (modeIdx === 0) {
               logSession.mutate({ durationMinutes: 25, type: "study" });
               setSessionsCompleted(c => c + 1);
-              toast.success("Focus session complete! Take a break. 🌿");
+              toast.success("🌿 Focus session complete! Take a break. Well done!");
             }
             return 0;
           }
@@ -74,13 +130,36 @@ export default function StudyShield() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [running]);
 
+  const handleStartPause = async () => {
+    if (!running) {
+      if (modeIdx === 0) {
+        await enterFullscreen();
+        await requestWakeLock();
+        toast.info("🔒 Focus mode ON — screen locked, phone silenced. Stay focused!");
+      }
+      setShowDistracted(false);
+      setRunning(true);
+    } else {
+      setRunning(false);
+      await releaseWakeLock();
+      await exitFullscreen();
+    }
+  };
+
   const selectMode = (idx: number) => {
     setModeIdx(idx);
     setSecondsLeft(MODES[idx].duration);
     setRunning(false);
+    releaseWakeLock();
+    exitFullscreen();
   };
 
-  const reset = () => { setSecondsLeft(mode.duration); setRunning(false); };
+  const reset = () => {
+    setSecondsLeft(mode.duration);
+    setRunning(false);
+    releaseWakeLock();
+    exitFullscreen();
+  };
 
   const totalTodayMins = Array.isArray(history)
     ? history.filter((s: { type: string; completedAt: string }) => {
@@ -90,16 +169,16 @@ export default function StudyShield() {
     : 0;
 
   return (
-    <div className="space-y-6 pb-20 md:pb-0">
+    <div ref={containerRef} className="space-y-6 pb-20 md:pb-0">
       <div>
         <h1 className="text-3xl font-bold text-foreground flex items-center gap-2">
           <Shield className="h-8 w-8 text-green-600" />
           Study Shield
         </h1>
-        <p className="text-muted-foreground mt-1">Pomodoro focus timer — earn XP for every session you complete</p>
+        <p className="text-muted-foreground mt-1">Pomodoro focus timer — earn XP and block distractions</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-none shadow-sm bg-green-50/60">
           <CardContent className="p-5 flex items-center gap-3">
             <Zap className="h-7 w-7 text-green-600" />
@@ -127,6 +206,15 @@ export default function StudyShield() {
             </div>
           </CardContent>
         </Card>
+        <Card className={`border-none shadow-sm ${distractions > 0 ? "bg-red-50/60" : "bg-gray-50/60"}`}>
+          <CardContent className="p-5 flex items-center gap-3">
+            <AlertTriangle className={`h-7 w-7 ${distractions > 0 ? "text-red-500" : "text-gray-400"}`} />
+            <div>
+              <p className="text-xs text-muted-foreground font-medium">Distractions</p>
+              <p className={`text-2xl font-bold ${distractions > 0 ? "text-red-600" : ""}`}>{distractions}</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="flex gap-2">
@@ -144,8 +232,15 @@ export default function StudyShield() {
         ))}
       </div>
 
-      <Card className={`border-none shadow-md ${mode.bg}`}>
+      <Card className={`border-none shadow-md ${mode.bg} ${running && modeIdx === 0 ? "ring-2 ring-green-500 ring-offset-2" : ""}`}>
         <CardContent className="p-10 flex flex-col items-center gap-8">
+          {running && modeIdx === 0 && (
+            <div className="flex items-center gap-2 bg-green-600 text-white px-4 py-1.5 rounded-full text-sm font-semibold">
+              <Lock className="h-3.5 w-3.5" />
+              FOCUS MODE ACTIVE — Screen locked, stay on task
+            </div>
+          )}
+
           <div className="relative flex items-center justify-center w-52 h-52">
             <svg className="w-52 h-52 -rotate-90 absolute" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="45" fill="none" stroke="#e5e7eb" strokeWidth="6" />
@@ -174,9 +269,12 @@ export default function StudyShield() {
             <Button
               size="lg"
               className={`px-10 font-bold text-lg ${running ? "bg-red-500 hover:bg-red-600" : "bg-primary"}`}
-              onClick={() => setRunning(r => !r)}
+              onClick={handleStartPause}
             >
-              {running ? <><Pause className="h-5 w-5 mr-2" /> Pause</> : <><Play className="h-5 w-5 mr-2" /> Start</>}
+              {running
+                ? <><Pause className="h-5 w-5 mr-2" /> Pause</>
+                : <><Play className="h-5 w-5 mr-2" /> {secondsLeft === mode.duration ? "Start" : "Resume"}</>
+              }
             </Button>
           </div>
 
@@ -188,8 +286,25 @@ export default function StudyShield() {
                 exit={{ opacity: 0 }}
                 className="text-center"
               >
-                <p className="text-sm text-green-700 font-medium">You're in the zone! Stay focused. 🦁</p>
-                <p className="text-xs text-muted-foreground mt-1">Earn 15 XP + SmartCoins when you finish</p>
+                <p className="text-sm text-green-700 font-medium">You're in the zone! All distractions blocked. 🦁</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Earn 15 XP + SmartCoins when you finish · Switching apps will pause timer
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence>
+            {showDistracted && !running && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-center bg-red-50 border border-red-200 rounded-xl px-6 py-4"
+              >
+                <p className="text-red-600 font-bold text-base">⚠️ You left the app!</p>
+                <p className="text-red-500 text-sm mt-1">Timer paused. Distraction #{distractions} recorded.</p>
+                <p className="text-muted-foreground text-xs mt-1">Press Resume to continue your session.</p>
               </motion.div>
             )}
           </AnimatePresence>

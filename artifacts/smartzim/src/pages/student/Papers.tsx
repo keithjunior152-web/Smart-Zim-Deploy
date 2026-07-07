@@ -14,22 +14,30 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function Papers() {
   const [subject, setSubject] = useState<string>("");
+  const [level, setLevel] = useState<string>("");
+  const [year, setYear] = useState<string>("");
   const [search, setSearch] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   const { toast } = useToast();
   const { downloadItem, openFile } = useDownloads();
   const { curriculum } = useMyCurriculum();
   const curriculumSubjects = allSubjects(curriculum);
+  const levels = curriculum?.levels ?? [];
+
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 15 }, (_, i) => String(currentYear - i));
 
   const { data: papers, isLoading } = useListPapers({
     curriculum: curriculum?.code || undefined,
     subject: subject && subject !== "All" ? subject : undefined,
+    level: level && level !== "All" ? level : undefined,
+    year: year && year !== "All" ? Number(year) : undefined,
   });
 
   const trackDownload = useTrackPaperDownload();
 
-  const filteredPapers = papers?.filter(p => 
-    p.subject.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredPapers = papers?.filter(p =>
+    p.subject.toLowerCase().includes(search.toLowerCase()) ||
     (p.paperCode && p.paperCode.toLowerCase().includes(search.toLowerCase()))
   );
 
@@ -79,6 +87,8 @@ export default function Papers() {
     });
   };
 
+  const hasFilters = !!(subject || level || year || search);
+
   return (
     <div className="space-y-6 pb-20 md:pb-0">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between gap-4">
@@ -98,19 +108,19 @@ export default function Papers() {
         </Button>
       </motion.div>
 
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col md:flex-row gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search subject or code..." 
-            className="pl-9 h-10" 
+          <Input
+            placeholder="Search subject or code..."
+            className="pl-9 h-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <Select value={subject} onValueChange={setSubject}>
-          <SelectTrigger className="w-full md:w-[180px]">
-            <SelectValue placeholder="Subject" />
+          <SelectTrigger className="w-full md:w-[160px]">
+            <SelectValue placeholder="All Subjects" />
           </SelectTrigger>
           <SelectContent className="max-h-72">
             <SelectItem value="All">All Subjects</SelectItem>
@@ -119,6 +129,38 @@ export default function Papers() {
             ))}
           </SelectContent>
         </Select>
+        <Select value={level} onValueChange={setLevel}>
+          <SelectTrigger className="w-full md:w-[150px]">
+            <SelectValue placeholder="All Levels" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="All">All Levels</SelectItem>
+            {levels.map((l) => (
+              <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Select value={year} onValueChange={setYear}>
+          <SelectTrigger className="w-full md:w-[120px]">
+            <SelectValue placeholder="Any Year" />
+          </SelectTrigger>
+          <SelectContent className="max-h-60">
+            <SelectItem value="All">Any Year</SelectItem>
+            {years.map((y) => (
+              <SelectItem key={y} value={y}>{y}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground h-10"
+            onClick={() => { setSubject(""); setLevel(""); setYear(""); setSearch(""); }}
+          >
+            Clear
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -128,9 +170,9 @@ export default function Papers() {
       ) : filteredPapers && filteredPapers.length > 0 ? (
         <div className="space-y-4">
           {filteredPapers.map((paper, i) => (
-            <motion.div 
-              key={paper.id} 
-              initial={{ opacity: 0, y: 10 }} 
+            <motion.div
+              key={paper.id}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.03 }}
             >
@@ -160,9 +202,9 @@ export default function Papers() {
                       </div>
                     </div>
                     <div className="flex items-center">
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         className="text-primary hover:bg-primary/10"
                         onClick={(e) => handleDownload(paper.id, paper.fileUrl, e)}
                         disabled={!paper.fileUrl}
@@ -181,6 +223,11 @@ export default function Papers() {
           <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-20" />
           <h3 className="text-lg font-medium text-foreground mb-1">No papers found</h3>
           <p className="text-muted-foreground">Try adjusting your search or filters.</p>
+          {hasFilters && (
+            <Button variant="link" onClick={() => { setSubject(""); setLevel(""); setYear(""); setSearch(""); }} className="mt-2">
+              Clear filters
+            </Button>
+          )}
         </div>
       )}
     </div>

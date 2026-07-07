@@ -8,13 +8,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { BookOpen, Search, DownloadCloud, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useMyCurriculum, allSubjects } from "@/lib/useCurriculum";
+import { useMyCurriculum, allSubjects, allGrades, gradesForLevel } from "@/lib/useCurriculum";
 import { useDownloads } from "@/lib/offlineDownloads";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/auth";
 
 export default function Notes() {
+  const { user } = useAuth();
   const [subject, setSubject] = useState<string>("");
   const [level, setLevel] = useState<string>("");
+  const [grade, setGrade] = useState<string>(user?.grade ?? "");
   const [search, setSearch] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
   const { toast } = useToast();
@@ -22,15 +25,19 @@ export default function Notes() {
   const { curriculum } = useMyCurriculum();
   const curriculumSubjects = allSubjects(curriculum);
   const levels = curriculum?.levels ?? [];
+  const gradeOptions = level && level !== "All"
+    ? gradesForLevel(curriculum, level)
+    : allGrades(curriculum);
 
   const { data: notes, isLoading } = useListNotes({
     curriculum: curriculum?.code || undefined,
     subject: subject && subject !== "All" ? subject : undefined,
     level: level && level !== "All" ? level : undefined,
+    grade: grade && grade !== "All" ? grade : undefined,
   });
 
-  const filteredNotes = notes?.filter(n => 
-    n.title.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredNotes = notes?.filter(n =>
+    n.title.toLowerCase().includes(search.toLowerCase()) ||
     n.topic.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -61,6 +68,8 @@ export default function Notes() {
     });
   };
 
+  const hasFilters = !!(subject || level || grade || search);
+
   return (
     <div className="space-y-6 pb-20 md:pb-0">
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex items-start justify-between gap-4">
@@ -80,18 +89,18 @@ export default function Notes() {
         </Button>
       </motion.div>
 
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1">
+      <div className="flex flex-col md:flex-row gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-          <Input 
-            placeholder="Search notes..." 
-            className="pl-9 h-10" 
+          <Input
+            placeholder="Search notes..."
+            className="pl-9 h-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <Select value={subject} onValueChange={setSubject}>
-          <SelectTrigger className="w-full md:w-[180px]">
+          <SelectTrigger className="w-full md:w-[160px]">
             <SelectValue placeholder="All Subjects" />
           </SelectTrigger>
           <SelectContent className="max-h-72">
@@ -101,8 +110,8 @@ export default function Notes() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={level} onValueChange={setLevel}>
-          <SelectTrigger className="w-full md:w-[180px]">
+        <Select value={level} onValueChange={(v) => { setLevel(v); setGrade(""); }}>
+          <SelectTrigger className="w-full md:w-[150px]">
             <SelectValue placeholder="All Levels" />
           </SelectTrigger>
           <SelectContent>
@@ -112,6 +121,29 @@ export default function Notes() {
             ))}
           </SelectContent>
         </Select>
+        {gradeOptions.length > 0 && (
+          <Select value={grade} onValueChange={setGrade}>
+            <SelectTrigger className="w-full md:w-[140px]">
+              <SelectValue placeholder="All Grades" />
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              <SelectItem value="All">All Grades</SelectItem>
+              {gradeOptions.map((g) => (
+                <SelectItem key={g} value={g}>{g}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+        {hasFilters && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground h-10"
+            onClick={() => { setSubject(""); setLevel(""); setGrade(""); setSearch(""); }}
+          >
+            Clear
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -121,9 +153,9 @@ export default function Notes() {
       ) : filteredNotes && filteredNotes.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filteredNotes.map((note, i) => (
-            <motion.div 
-              key={note.id} 
-              initial={{ opacity: 0, y: 20 }} 
+            <motion.div
+              key={note.id}
+              initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.05 }}
             >
@@ -157,8 +189,8 @@ export default function Notes() {
           <BookOpen className="h-12 w-12 mx-auto text-muted-foreground mb-4 opacity-20" />
           <h3 className="text-lg font-medium text-foreground mb-1">No notes found</h3>
           <p className="text-muted-foreground">Try adjusting your search or filters.</p>
-          {(subject || level || search) && (
-            <Button variant="link" onClick={() => { setSubject(""); setLevel(""); setSearch(""); }} className="mt-2">
+          {hasFilters && (
+            <Button variant="link" onClick={() => { setSubject(""); setLevel(""); setGrade(""); setSearch(""); }} className="mt-2">
               Clear filters
             </Button>
           )}

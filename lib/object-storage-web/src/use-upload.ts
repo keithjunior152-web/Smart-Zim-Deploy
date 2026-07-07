@@ -23,38 +23,33 @@ export function useUpload(options: UseUploadOptions = {}) {
       setProgress(0);
 
       try {
-        // Step 1: ask the server for a short-lived signed upload URL.
-        const urlRes = await fetch(`${basePath}/upload-url`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contentType: file.type || "application/octet-stream" }),
-        });
+        const formData = new FormData();
+        formData.append("file", file);
 
-        if (!urlRes.ok) {
-          const body = await urlRes.json().catch(() => ({}));
-          throw new Error((body as { error?: string }).error ?? `Failed to prepare upload (${urlRes.status})`);
-        }
-
-        const { uploadUrl, objectPath } = (await urlRes.json()) as { uploadUrl: string; objectPath: string };
-
-        // Step 2: upload the file straight to storage from the browser,
-        // bypassing this server (and any serverless body-size limits).
-        await new Promise<void>((resolve, reject) => {
+        const data = await new Promise<UploadResponse>((resolve, reject) => {
           const xhr = new XMLHttpRequest();
-          xhr.open("PUT", uploadUrl);
-          xhr.setRequestHeader("Content-Type", file.type || "application/octet-stream");
+          xhr.open("POST", `${basePath}/uploads`);
+          xhr.withCredentials = true;
           xhr.upload.onprogress = (e) => {
             if (e.lengthComputable) setProgress(Math.round((e.loaded / e.total) * 100));
           };
           xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) resolve();
-            else reject(new Error(`Upload failed (${xhr.status})`));
+            if (xhr.status >= 200 && xhr.status < 300) {
+              try {
+                resolve(JSON.parse(xhr.responseText) as UploadResponse);
+              } catch {
+                reject(new Error("Invalid response from server"));
+              }
+            } else {
+              let msg = `Upload failed (${xhr.status})`;
+              try { msg = (JSON.parse(xhr.responseText) as { error?: string }).error ?? msg; } catch { /* ignore */ }
+              reject(new Error(msg));
+            }
           };
           xhr.onerror = () => reject(new Error("Upload failed. Check your connection and try again."));
-          xhr.send(file);
+          xhr.send(formData);
         });
 
-        const data: UploadResponse = { objectPath };
         setProgress(100);
         options.onSuccess?.(data);
         return data;
