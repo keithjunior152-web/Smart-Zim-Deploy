@@ -25,8 +25,8 @@ export function useUploadSupabase() {
     try {
       const allowed = ["image/png", "image/jpeg", "image/webp"];
       if (!allowed.includes(file.type)) throw new Error("Invalid file type");
-      const maxBytes = 10 * 1024 * 1024; // 10MB
-      if (file.size > maxBytes) throw new Error("File too large (max 10MB)");
+      const maxBytes = 200 * 1024 * 1024; // 200MB
+      if (file.size > maxBytes) throw new Error("File too large (max 200MB)");
 
       const ext = file.name.split(".").pop() ?? "bin";
       const filename = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
