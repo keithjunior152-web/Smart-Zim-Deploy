@@ -17,9 +17,6 @@ interface MediaUploadProps {
 export function MediaUpload({ onUploaded, accept, label, icon = "image", maxMB = 50, variant = "button" }: MediaUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { uploadFile, isUploading, progress } = useUpload({
-    onSuccess: (res) => {
-      onUploaded(`/api/storage${res.objectPath}`, "");
-    },
     onError: () => toast.error("Upload failed. Try again."),
   });
 
